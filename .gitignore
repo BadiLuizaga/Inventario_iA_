@@ -1,0 +1,16 @@
+# Configuración local con la URL y la clave pública de Supabase
+js/config.js
+
+# Variables de entorno y credenciales (nunca se versionan)
+.env
+.env.*
+!.env.example
+supabase/.temp/
+supabase/.branches/
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+node_modules/
