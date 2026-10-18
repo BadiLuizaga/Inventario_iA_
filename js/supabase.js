@@ -14,14 +14,19 @@ function isPrivilegedKey(key) {
   } catch (_) { return false; }
 }
 
+let client = null;
+let cfg = {};
+
+/** Configuración pública (nombre de la tienda, moneda…). */
+export const appConfig = () => cfg;
+
 /**
  * @returns {Promise<{client: object|null, status: 'ok'|'no-config'|'no-lib'|'unsafe-key'|'bad-url'}>}
  */
 export async function initSupabase() {
-  let cfg = null;
-  try { cfg = (await import('./config.js')).default; } catch (_) { /* sin config.js */ }
-  const url = (cfg && cfg.SUPABASE_URL || '').trim();
-  const key = (cfg && (cfg.SUPABASE_PUBLISHABLE_KEY || cfg.SUPABASE_ANON_KEY) || '').trim();
+  try { cfg = (await import('./config.js')).default || {}; } catch (_) { cfg = {}; }
+  const url = (cfg.SUPABASE_URL || '').trim();
+  const key = (cfg.SUPABASE_PUBLISHABLE_KEY || cfg.SUPABASE_ANON_KEY || '').trim();
 
   if (!url || !key) return { client: null, status: 'no-config' };
   if (isPrivilegedKey(key)) {
@@ -37,9 +42,22 @@ export async function initSupabase() {
   return { client, status: 'ok' };
 }
 
-let client = null;
 /** Cliente ya inicializado (para los servicios de datos). */
 export function db() {
   if (!client) throw new Error('Supabase no está configurado');
   return client;
 }
+
+/** Lanza el error de una respuesta de Supabase o devuelve sus datos. */
+export function unwrap({ data, error }) {
+  if (error) throw error;
+  return data;
+}
+
+/** Mensajes para cuando la base no está disponible. */
+export const DB_MSG = {
+  'no-config': { icon: 'plug', title: 'Base de datos sin configurar', text: 'Copia js/config.example.js como js/config.js y completa la URL y la clave pública de tu proyecto de Supabase.' },
+  'unsafe-key': { icon: 'alert', kind: 'err', title: 'Clave no permitida', text: 'js/config.js contiene una clave secreta o service_role. Reemplázala por la clave pública (publishable o anon) y rota la clave expuesta en Supabase.' },
+  'bad-url': { icon: 'alert', kind: 'err', title: 'URL de Supabase no válida', text: 'Revisa SUPABASE_URL en js/config.js: debe empezar por https://.' },
+  'no-lib': { icon: 'alert', kind: 'err', title: 'No se pudo cargar Supabase', text: 'La librería no se descargó. Revisa tu conexión a internet y recarga la página.' },
+};

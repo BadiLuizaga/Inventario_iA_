@@ -213,6 +213,9 @@ revoke all on public.perfiles, public.productos, public.inventario, public.movim
 revoke insert, update, delete, truncate, references, trigger
   on public.perfiles, public.inventario, public.movimientos from authenticated;
 revoke truncate, references, trigger on public.productos from authenticated;
+-- Concesiones explícitas (no depender de los privilegios por defecto del proyecto). RLS decide las filas.
+grant select on public.perfiles, public.productos, public.inventario, public.movimientos to authenticated;
+grant insert, update, delete on public.productos to authenticated;
 
 -- Lectura: cualquier usuario con perfil activo
 create policy "perfiles: lectura para usuarios activos" on public.perfiles

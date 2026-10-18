@@ -1,0 +1,22 @@
+{
+  "name": "inventario-calzado",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tienda virtual, herramienta de almacén con IA y panel administrativo (Supabase).",
+  "type": "module",
+  "scripts": {
+    "build:www": "node scripts/build-www.mjs",
+    "android:sync": "node scripts/build-www.mjs && npx cap sync android",
+    "android:open": "npx cap open android",
+    "test:db": "node supabase/tests/migraciones.test.mjs",
+    "dev:local": "node scripts/dev-local.mjs",
+    "supabase:local": "supabase start"
+  },
+  "devDependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/cli": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@electric-sql/pglite": "0.3.15",
+    "supabase": "^2.121.0"
+  }
+}

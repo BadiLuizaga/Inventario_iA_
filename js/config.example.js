@@ -12,4 +12,8 @@
 export default {
   SUPABASE_URL: '',              // p. ej. https://abcdefghijkl.supabase.co
   SUPABASE_PUBLISHABLE_KEY: '',  // p. ej. sb_publishable_…
+
+  // Presentación de la tienda (no son datos de negocio de la base)
+  TIENDA_NOMBRE: 'Tienda de calzado',
+  MONEDA: 'Bs',
 };

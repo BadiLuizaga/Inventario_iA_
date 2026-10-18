@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1F3F">
+<meta name="robots" content="noindex">
+<title>Panel administrativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side" id="side" aria-label="Menú del panel">
+    <div class="side-brand">
+      <span class="brand-mark" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+      <div><strong>Panel</strong><small id="sideStore">Administración</small></div>
+    </div>
+    <nav id="sideNav">
+      <a href="#/resumen" data-r="resumen">Resumen</a>
+      <span class="side-sep">Catálogo</span>
+      <a href="#/productos" data-r="productos">Productos</a>
+      <a href="#/marcas" data-r="marcas">Marcas</a>
+      <a href="#/categorias" data-r="categorias">Categorías</a>
+      <a href="#/tallas" data-r="tallas">Tallas</a>
+      <a href="#/colores" data-r="colores">Colores</a>
+      <span class="side-sep">Operación</span>
+      <a href="#/pedidos" data-r="pedidos">Pedidos</a>
+      <a href="#/sucursales" data-r="sucursales">Sucursales</a>
+      <a href="#/almacenes" data-r="almacenes">Almacenes</a>
+      <a href="#/reportes" data-r="reportes">Reportes</a>
+      <span class="side-sep">Sistema</span>
+      <a href="#/usuarios" data-r="usuarios">Usuarios y roles</a>
+      <a href="#/configuracion" data-r="configuracion">Configuración</a>
+      <span class="side-sep">Ir a</span>
+      <a href="index.html">Tienda virtual ↗</a>
+      <a href="almacen.html">Herramienta de almacén ↗</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <header class="bar">
+      <button class="icon-btn menu-btn" id="btnMenu" type="button" aria-label="Menú" aria-controls="side" aria-expanded="false">
+        <svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h1 id="pageTitle">Panel administrativo</h1>
+      <div class="bar-user">
+        <span id="userInfo" class="muted"></span>
+        <button class="btn small" id="btnLogout" type="button" hidden>Cerrar sesión</button>
+      </div>
+    </header>
+    <main id="main" tabindex="-1">
+      <div class="loading" role="status"><span class="spinner" aria-hidden="true"></span><span>Cargando…</span></div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module" src="js/admin/app.js"></script>
+</body>
+</html>

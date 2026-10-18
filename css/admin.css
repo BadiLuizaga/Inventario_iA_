@@ -1,0 +1,61 @@
+/* =====================================================================
+ * Panel administrativo
+ * ===================================================================== */
+body{background:var(--section)}
+.shell{display:grid; grid-template-columns:250px 1fr; min-height:100vh}
+.side{background:var(--navy); color:var(--on-navy); padding:18px 12px; position:sticky; top:0; height:100vh; overflow-y:auto}
+.side-brand{display:flex; align-items:center; gap:10px; padding:4px 8px 18px}
+.side-brand strong{display:block; font-family:var(--font-display)}
+.side-brand small{color:var(--on-navy-muted); font-size:.8rem}
+.brand-mark{width:38px; height:38px; border-radius:11px; display:grid; place-items:center; background:var(--blue); color:#fff; flex:none}
+.side nav{display:grid; gap:2px}
+.side a{color:var(--on-navy-muted); text-decoration:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:.93rem}
+.side a:hover{background:var(--navy-2); color:#fff}
+.side a[aria-current=page]{background:var(--blue); color:#fff}
+.side-sep{margin:14px 12px 4px; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:#7F93B5; font-weight:700}
+
+.content{min-width:0; display:flex; flex-direction:column}
+.bar{position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; padding:12px 24px; background:var(--surface); border-bottom:1px solid var(--line)}
+.bar h1{font-size:1.2rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar-user{display:flex; align-items:center; gap:10px; font-size:.88rem}
+.menu-btn{display:none}
+main{padding:24px; display:grid; gap:18px; align-content:start; outline:none}
+
+@media (max-width:960px){
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed; inset:0 auto 0 0; width:270px; z-index:50; transform:translateX(-100%); transition:transform .2s; box-shadow:var(--shadow)}
+  .side.open{transform:none}
+  .menu-btn{display:inline-grid}
+  .bar{padding:10px 16px}
+  .bar-user #userInfo{display:none}
+  main{padding:16px}
+}
+
+.page-head{display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between}
+.page-head h2{font-size:1.3rem}
+.kpi-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px}
+.kpi{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px; display:grid; gap:4px}
+.kpi span{color:var(--muted); font-size:.85rem; font-weight:600}
+.kpi strong{font-family:var(--font-display); font-size:1.7rem; color:var(--navy)}
+.kpi.warn strong{color:var(--warn)}
+.steps{list-style:none; margin:0; padding:0; display:grid; gap:8px}
+.steps li{display:flex; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface)}
+.steps .n{width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--blue-light); color:var(--navy); font-weight:800; flex:none}
+.steps li.done .n{background:var(--ok-soft); color:var(--ok)}
+.steps li > div{flex:1}
+.subtabs{display:flex; gap:4px; border-bottom:1px solid var(--line); overflow-x:auto}
+.subtabs button{border:0; background:transparent; padding:10px 14px; font-weight:700; color:var(--muted); border-bottom:3px solid transparent; white-space:nowrap}
+.subtabs button[aria-selected=true]{color:var(--navy); border-bottom-color:var(--blue)}
+.thumb-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px}
+.thumb-card{border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:var(--surface); display:grid}
+.thumb-card img{aspect-ratio:1/1; object-fit:cover; width:100%; background:var(--section)}
+.thumb-card .meta{padding:8px; display:grid; gap:6px; font-size:.82rem}
+.cell-actions{display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap}
+.color-dot{display:inline-block; width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.2); vertical-align:middle; margin-right:6px}
+.check-grid{display:flex; flex-wrap:wrap; gap:8px}
+.check-grid label{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line-strong); border-radius:999px; font-weight:600; font-size:.9rem}
+.check-grid input{accent-color:var(--blue)}
+.bars{display:grid; gap:6px}
+.bar-row{display:grid; grid-template-columns:minmax(90px,180px) 1fr auto; gap:10px; align-items:center; font-size:.88rem}
+.bar-track{height:10px; border-radius:5px; background:var(--section); overflow:hidden}
+.bar-fill{height:100%; background:var(--blue); border-radius:5px}

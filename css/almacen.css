@@ -1,26 +1,31 @@
-/* Estilos de la app. Tokens y componentes heredados del clasificador original. */
+/* Herramienta de almacén (móvil primero). Se carga DESPUÉS de base.css.
+   Componentes heredados del clasificador original, con la paleta azul. */
 :root{
   --font-ui:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --font-display:"Sora","DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-  --bg:#EDF3F4; --surface:#FFFFFF; --ink:#0D2B33; --muted:#4F6F78; --line:#D3E1E4; --track:#C7D9DD;
-  --in:#0B7A75; --in-soft:#D8F0EE; --out:#B8460F; --out-soft:#FBE6D8; --danger:#B3261E; --on-accent:#FFFFFF;
-  --warn:#8A5A00; --warn-soft:#FFF1CC;
+  --bg:#F3F5F8; --surface:#FFFFFF; --ink:#14213D; --muted:#5A6A82; --line:#DDE3EB; --track:#C9D4E3;
+  --in:#1F5FBF; --in-soft:#DCE8F8; --out:#B8460F; --out-soft:#FBE6D8; --danger:#B42318; --on-accent:#FFFFFF;
+  --warn:#8F5B00; --warn-soft:#FFF3D6;
   --accent:var(--in); --accent-soft:var(--in-soft);
-  --cam:#0A1A1F; --shadow:0 1px 2px rgba(13,43,51,.06),0 6px 18px rgba(13,43,51,.07);
-  --r:20px;
+  --cam:#0B1F3F; --shadow:0 1px 2px rgba(11,31,63,.06),0 6px 18px rgba(11,31,63,.07);
+  --r:18px;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#08181D; --surface:#102A31; --ink:#E7F4F6; --muted:#8DB1BA; --line:#1D3F48; --track:#2A505B;
-    --in:#34CABD; --in-soft:#0E3B3B; --out:#FF9D66; --out-soft:#3D2514; --danger:#FF8F85; --on-accent:#032220;
+    --bg:#0A1628; --surface:#12213A; --ink:#E6EEF9; --muted:#9FB2CF; --line:#22355A; --track:#2C4166;
+    --in:#6EA2F0; --in-soft:#16305A; --out:#FF9D66; --out-soft:#3D2514; --danger:#FF8F85; --on-accent:#06142B;
     --warn:#FFD27A; --warn-soft:#3A2E10;
+    --section:#0F1C33; --line-strong:#2E4673; --blue:#6EA2F0; --blue-hover:#8DB6F5; --blue-50:#132643; --blue-light:#1B3561; --navy:#E6EEF9; --navy-2:#C8D8F0;
+    --ok:#6FD3A0; --ok-soft:#123A2A; --danger-soft:#3D1A17;
     --cam:#000; --shadow:none; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#08181D; --surface:#102A31; --ink:#E7F4F6; --muted:#8DB1BA; --line:#1D3F48; --track:#2A505B;
-  --in:#34CABD; --in-soft:#0E3B3B; --out:#FF9D66; --out-soft:#3D2514; --danger:#FF8F85; --on-accent:#032220;
+  --bg:#0A1628; --surface:#12213A; --ink:#E6EEF9; --muted:#9FB2CF; --line:#22355A; --track:#2C4166;
+  --in:#6EA2F0; --in-soft:#16305A; --out:#FF9D66; --out-soft:#3D2514; --danger:#FF8F85; --on-accent:#06142B;
   --warn:#FFD27A; --warn-soft:#3A2E10;
+  --section:#0F1C33; --line-strong:#2E4673; --blue:#6EA2F0; --blue-hover:#8DB6F5; --blue-50:#132643; --blue-light:#1B3561; --navy:#E6EEF9; --navy-2:#C8D8F0;
+  --ok:#6FD3A0; --ok-soft:#123A2A; --danger-soft:#3D1A17;
   --cam:#000; --shadow:none; color-scheme:dark;
 }
 :root[data-theme="light"]{color-scheme:light}
@@ -173,7 +178,7 @@ svg.i.solid{fill:currentColor; stroke:none}
 .st-bar div{height:100%; width:0; background:#e0a800}
 .status[data-state=counted] .st-bar div{background:var(--accent)}
 
-.flash{position:absolute; inset:0; z-index:4; border:6px solid var(--in); border-radius:24px; opacity:0; pointer-events:none}
+.flash{position:absolute; inset:0; z-index:4; border:6px solid #4ade80; border-radius:24px; opacity:0; pointer-events:none}
 .flash.on{animation:flash .8s ease-out}
 @keyframes flash{0%{opacity:1} 100%{opacity:0}}
 .pop{
@@ -253,3 +258,38 @@ dialog .foot{display:grid; gap:8px; margin-top:14px}
 @media (orientation:landscape) and (max-height:520px){
   .viewfinder{width:min(100%,62vh)}
 }
+
+/* ---------- almacén: cabecera, selector, variantes, cierre ---------- */
+.brand-txt{display:grid; min-width:0}
+.wh-btn{border:0; background:transparent; padding:0; text-align:left; color:var(--accent); font-weight:700; font-size:.86rem; max-width:52vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.wh-btn::after{content:" ▾"}
+.field select,.field textarea{width:100%; min-height:48px; padding:8px 12px; border-radius:12px; border:2px solid var(--line); background:var(--bg); color:var(--ink)}
+.field select:focus,.field textarea:focus,.field input:focus{border-color:var(--accent); outline:0; box-shadow:none}
+.card p{margin:0}
+.picker{display:grid; gap:10px}
+.pick-results{display:grid; gap:8px}
+.pick-list{list-style:none; margin:0; padding:0; display:grid; gap:6px}
+.pick-item{width:100%; text-align:left; display:grid; gap:2px; padding:12px 14px; border-radius:14px; border:2px solid var(--line); background:var(--surface); color:var(--ink)}
+.pick-item:hover,.pick-item:focus-visible{border-color:var(--accent)}
+.var-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px}
+.var-btn{display:grid; gap:2px; text-align:left; padding:12px; min-height:60px; border-radius:14px; border:2px solid var(--line); background:var(--surface); color:var(--ink); font-weight:700}
+.var-btn small{font-weight:500; color:var(--muted)}
+.var-btn:not(:disabled):hover{border-color:var(--accent)}
+.var-btn.off{opacity:.6}
+.item-btn{width:100%; text-align:left; border:0; color:var(--ink); font:inherit}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:8px}
+.kpis div{display:grid; padding:12px; border-radius:14px; background:var(--bg)}
+.kpis strong{font-family:var(--font-display); font-size:1.5rem}
+.kpis span{color:var(--muted); font-size:.85rem}
+.toolbar.card{display:flex; flex-wrap:wrap; gap:12px}
+.table-wrap{background:var(--surface)}
+table.data th{background:var(--bg)}
+table.data tr.low td{background:var(--warn-soft)}
+/* Cabecera compacta en móvil: la marca cede espacio sin solaparse */
+.top .brand{flex:1; min-width:0}
+.top .brand h1{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.top-actions{flex:none}
+.account-btn{max-width:34vw}
+
+/* Cuenta sin rol de personal: solo el aviso de acceso */
+body[data-acceso="denegado"] .tabbar, body[data-acceso="denegado"] [data-screen], body[data-acceso="denegado"] #btnWarehouse{display:none!important}

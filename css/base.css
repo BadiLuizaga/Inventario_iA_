@@ -1,0 +1,139 @@
+/* =====================================================================
+ * Base compartida: tokens de la paleta azul, tipografía y componentes.
+ * La usan la tienda, el almacén y el panel administrativo.
+ * ===================================================================== */
+:root{
+  --font-ui:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-display:"Sora","DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+
+  /* Paleta azul formal */
+  --navy:#0B1F3F; --navy-2:#13305E; --on-navy:#FFFFFF; --on-navy-muted:#B9C7DE;
+  --blue:#1F5FBF; --blue-hover:#174C9C; --on-blue:#FFFFFF;
+  --blue-light:#DCE8F8; --blue-50:#F1F6FD;
+
+  --bg:#FFFFFF; --section:#F3F5F8; --surface:#FFFFFF;
+  --ink:#14213D; --muted:#5A6A82; --line:#DDE3EB; --line-strong:#C5CFDC;
+
+  --ok:#1D7A4C; --ok-soft:#E3F4EB;
+  --warn:#8F5B00; --warn-soft:#FFF3D6;
+  --danger:#B42318; --danger-soft:#FDECEA;
+
+  --r:14px; --r-sm:10px;
+  --shadow:0 1px 2px rgba(11,31,63,.06),0 8px 24px rgba(11,31,63,.08);
+  --focus:0 0 0 3px rgba(31,95,191,.35);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 var(--font-ui); -webkit-tap-highlight-color:transparent}
+h1,h2,h3,h4,p{margin:0}
+h1,h2,h3,h4{font-family:var(--font-display); letter-spacing:-.015em; line-height:1.2}
+a{color:var(--blue)}
+img{max-width:100%; display:block}
+button,input,select,textarea{font:inherit; color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:none; box-shadow:var(--focus); border-radius:6px}
+svg.i{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none}
+svg.i.solid{fill:currentColor; stroke:none}
+.sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* ---------- botones ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:44px; padding:0 18px; border-radius:var(--r-sm);
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink);
+  font-weight:700; text-decoration:none; white-space:nowrap;
+}
+.btn:hover{border-color:var(--blue); color:var(--blue)}
+.btn.primary{background:var(--blue); border-color:var(--blue); color:var(--on-blue)}
+.btn.primary:hover{background:var(--blue-hover); border-color:var(--blue-hover); color:var(--on-blue)}
+.btn.navy{background:var(--navy); border-color:var(--navy); color:var(--on-navy)}
+.btn.danger{color:var(--danger); border-color:#E7B4AE}
+.btn.danger:hover{background:var(--danger-soft)}
+.btn.ghost{border-color:transparent; background:transparent}
+.btn.small{min-height:36px; padding:0 12px; font-size:.9rem}
+.btn.block{width:100%}
+.btn:disabled{opacity:.55; cursor:not-allowed}
+.icon-btn{width:44px; height:44px; display:inline-grid; place-items:center; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--surface); color:inherit}
+
+/* ---------- formularios ---------- */
+.field{display:grid; gap:6px}
+.field > label, .field > .label{font-weight:700; font-size:.92rem}
+.field small{color:var(--muted); font-size:.82rem}
+.input, .field input:not([type=checkbox]):not([type=radio]), .field select, .field textarea{
+  width:100%; min-height:44px; padding:10px 12px; border-radius:var(--r-sm);
+  border:1px solid var(--line-strong); background:var(--surface);
+}
+.field textarea{min-height:96px; resize:vertical}
+.input:focus, .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--blue); box-shadow:var(--focus)}
+.field [aria-invalid=true]{border-color:var(--danger)}
+.form-grid{display:grid; gap:14px}
+@media (min-width:640px){ .form-grid.two{grid-template-columns:1fr 1fr} .form-grid .span2{grid-column:1/-1} }
+.check{display:flex; align-items:center; gap:10px; font-weight:600}
+.check input{width:20px; height:20px; accent-color:var(--blue)}
+.actions{display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end}
+
+.msg{font-size:.92rem; min-height:1.2em; color:var(--muted)}
+.msg.err{color:var(--danger)} .msg.ok{color:var(--ok)}
+
+/* ---------- tarjetas, etiquetas, tablas ---------- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px}
+.card h3{font-size:1.05rem; margin-bottom:10px}
+.tag{display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:.8rem; font-weight:700; background:var(--blue-light); color:var(--navy-2); white-space:nowrap}
+.tag.ok{background:var(--ok-soft); color:var(--ok)}
+.tag.warn{background:var(--warn-soft); color:var(--warn)}
+.tag.danger{background:var(--danger-soft); color:var(--danger)}
+.tag.muted{background:var(--section); color:var(--muted)}
+.tag .dot{width:8px; height:8px; border-radius:50%; background:currentColor}
+
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+table.data{width:100%; border-collapse:collapse; font-size:.94rem}
+table.data th, table.data td{padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle}
+table.data th{background:var(--section); font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); white-space:nowrap}
+table.data tr:last-child td{border-bottom:0}
+table.data td.num, table.data th.num{text-align:right; font-variant-numeric:tabular-nums}
+table.data tr.low td{background:var(--warn-soft)}
+
+/* ---------- estados vacíos / carga ---------- */
+.empty{
+  display:grid; justify-items:center; text-align:center; gap:10px;
+  padding:40px 20px; border:1px dashed var(--line-strong); border-radius:var(--r); background:var(--blue-50); color:var(--muted);
+}
+.empty svg.i{width:44px; height:44px; color:var(--blue)}
+.empty strong{color:var(--ink); font-family:var(--font-display); font-size:1.1rem}
+.empty p{max-width:52ch}
+.empty[data-kind=err]{background:var(--danger-soft); border-color:#EBC3BE}
+.empty[data-kind=err] svg.i{color:var(--danger)}
+.loading{display:flex; align-items:center; gap:10px; color:var(--muted); padding:24px 4px}
+.spinner{width:22px; height:22px; border-radius:50%; border:3px solid var(--blue-light); border-top-color:var(--blue); animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- diálogos y avisos ---------- */
+dialog{border:0; border-radius:18px; padding:22px; width:min(560px, calc(100vw - 24px)); max-height:calc(100vh - 32px); overflow:auto; background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(11,31,63,.45)}
+dialog h2{font-size:1.25rem; margin-bottom:6px}
+dialog .sub{color:var(--muted); margin-bottom:16px}
+dialog .foot{display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; margin-top:18px}
+.snack{position:fixed; left:50%; transform:translateX(-50%); bottom:24px; z-index:60; background:var(--navy); color:var(--on-navy); padding:12px 18px; border-radius:12px; box-shadow:var(--shadow); max-width:calc(100vw - 32px)}
+.snack.err{background:var(--danger)}
+.notice{padding:12px 14px; border-radius:var(--r-sm); background:var(--blue-50); border:1px solid var(--blue-light); color:var(--navy-2); font-size:.92rem}
+.notice.warn{background:var(--warn-soft); border-color:#F1D79B; color:var(--warn)}
+
+/* ---------- utilidades ---------- */
+.row{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.between{justify-content:space-between}
+.muted{color:var(--muted)}
+.stack{display:grid; gap:14px}
+.price{font-family:var(--font-display); font-weight:700}
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:end}
+.toolbar .field{min-width:160px; flex:1}
+
+/* ---------- compartidos: fichas de datos y chips ---------- */
+.facts{display:grid; grid-template-columns:auto 1fr; gap:6px 16px; font-size:.94rem; margin:0}
+.facts dt{color:var(--muted)} .facts dd{margin:0; font-weight:600; overflow-wrap:anywhere}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{min-height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line-strong); background:var(--surface); font-weight:600; font-size:.88rem; display:inline-flex; align-items:center; gap:6px}
+.chip[aria-pressed=true]{background:var(--navy); border-color:var(--navy); color:#fff}
+.swatch{width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.2); flex:none}
+main:focus, main:focus-visible{outline:none; box-shadow:none}

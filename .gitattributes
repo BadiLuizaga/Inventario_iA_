@@ -1,0 +1,3 @@
+# Los scripts que se ejecutan dentro del contenedor (Linux) deben conservar LF
+*.sh text eol=lf
+docker/*.conf text eol=lf

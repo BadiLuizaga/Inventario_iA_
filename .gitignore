@@ -14,3 +14,15 @@ Thumbs.db
 .vscode/
 .idea/
 node_modules/
+
+# Capacitor / Android (generados)
+www/
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/public/
+*.apk
+*.aab
+*.keystore
+*.jks

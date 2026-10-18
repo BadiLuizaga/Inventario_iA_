@@ -1,0 +1,17 @@
+.git
+.gitignore
+.gitattributes
+.env
+.env.*
+js/config.js
+supabase
+docs
+android
+node_modules
+capacitor.config.json
+package.json
+package-lock.json
+www
+README.md
+Dockerfile
+compose.yaml

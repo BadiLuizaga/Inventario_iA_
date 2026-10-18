@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3F5F8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Almacén">
+<title>Almacén · Inventario inteligente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;700;800&display=swap">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>try{var d=JSON.parse(localStorage.getItem("inventario-ia:prefs")||localStorage.getItem("inventario-ia:v2")),t=d.cfg.theme;if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/almacen.css">
+</head>
+<body data-tab="scan">
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg class="i" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      </div>
+      <div class="brand-txt">
+        <h1>Almacén</h1>
+        <button id="btnWarehouse" class="wh-btn" type="button" aria-label="Cambiar de almacén">Elegir almacén</button>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="btnAccount" class="account-btn" type="button">Iniciar sesión</button>
+      <button id="btnSettings" class="icon-btn" type="button" aria-label="Ajustes">
+        <svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="tabbar" aria-label="Pantallas" role="tablist">
+    <button type="button" role="tab" data-tab="scan" aria-selected="true">
+      <svg class="i" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 12h8"/></svg>
+      <span>Escáner</span>
+    </button>
+    <button type="button" role="tab" data-tab="stock" aria-selected="false">
+      <svg class="i" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      <span>Stock</span>
+    </button>
+    <button type="button" role="tab" data-tab="move" aria-selected="false">
+      <svg class="i" viewBox="0 0 24 24"><path d="M7 4L3 8l4 4"/><path d="M3 8h14"/><path d="M17 20l4-4-4-4"/><path d="M21 16H7"/></svg>
+      <span>Registrar</span>
+    </button>
+    <button type="button" role="tab" data-tab="count" aria-selected="false">
+      <svg class="i" viewBox="0 0 24 24"><path d="M9 4h6v3H9z"/><path d="M7 5H5v16h14V5h-2"/><path d="M8 12l2 2 4-4"/></svg>
+      <span>Conteos</span>
+    </button>
+    <button type="button" role="tab" data-tab="history" aria-selected="false">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span>Historial</span>
+    </button>
+  </nav>
+
+  <main>
+    <!-- Cuenta sin rol de personal (p. ej. un cliente): solo ve este aviso -->
+    <section id="noAccess" class="screen" hidden></section>
+
+    <!-- ============ ESCÁNER ============ -->
+    <section class="screen" data-screen="scan" aria-label="Escáner">
+      <div class="viewfinder" id="vf" data-state="off">
+        <video id="video" playsinline muted autoplay></video>
+        <div class="frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+        <div class="vf-start" id="vfStart">
+          <div class="spinner" id="vfSpin" hidden></div>
+          <svg class="i" id="vfIcon" viewBox="0 0 24 24" width="44" height="44" style="width:44px;height:44px"><path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <p id="vfMsg">Preparando…</p>
+          <p class="vf-hint" id="vfHint" hidden></p>
+          <button class="btn primary" id="btnStart" type="button" hidden>Activar cámara</button>
+        </div>
+
+        <div class="flash" id="flash"></div>
+        <div class="pop" id="pop"></div>
+      </div>
+
+      <div class="status" id="vfStatus" data-state="off" hidden>
+        <div class="st-main">
+          <div class="st-line"><span class="dot" id="vfDot" hidden></span><span id="vfText" aria-live="polite"></span></div>
+          <div class="st-sub" id="vfSub"></div>
+        </div>
+        <button class="round" id="btnPause" type="button" aria-pressed="false" aria-label="Pausar el reconocimiento" title="Pausar">
+          <svg class="i solid" id="icPause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          <svg class="i solid" id="icPlay" viewBox="0 0 24 24" hidden><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="st-bar"><div id="vfBar"></div></div>
+      </div>
+
+      <section class="card detected" id="detected" hidden aria-live="polite">
+        <div class="row between"><h3>Producto reconocido</h3><button class="btn small" type="button" id="btnDetClose">Descartar</button></div>
+        <p class="lbl" id="detLabel"></p>
+        <div id="detBody"></div>
+        <p class="notice" style="margin-top:10px">La cámara solo identifica el modelo: no cuenta unidades ni modifica el stock. Las cantidades se registran y confirman a mano.</p>
+      </section>
+
+      <section class="card">
+        <h3>¿No se reconoce el producto?</h3>
+        <p>Búscalo manualmente por nombre, modelo o etiqueta.</p>
+        <div id="manualPick" style="margin-top:10px"></div>
+      </section>
+
+      <section class="tech" id="tech" hidden>
+        <h3>Detalles técnicos</h3>
+        <div id="probs"></div>
+      </section>
+    </section>
+    <!-- ============ EXISTENCIAS ============ -->
+    <section class="screen" data-screen="stock" aria-label="Existencias" hidden>
+      <div class="screen-head"><h2>Existencias</h2><button class="btn small" type="button" data-refresh>Actualizar</button></div>
+      <div id="stockBody"></div>
+    </section>
+
+    <!-- ============ MOVIMIENTO ============ -->
+    <section class="screen" data-screen="move" aria-label="Registrar movimiento" hidden>
+      <div class="screen-head"><h2>Registrar movimiento</h2></div>
+      <div id="moveBody"></div>
+    </section>
+
+    <!-- ============ CONTEOS ============ -->
+    <section class="screen" data-screen="count" aria-label="Conteos físicos" hidden>
+      <div class="screen-head"><h2>Conteos físicos</h2><button class="btn small" type="button" data-refresh>Actualizar</button></div>
+      <div id="countBody"></div>
+    </section>
+
+    <!-- ============ HISTORIAL ============ -->
+    <section class="screen" data-screen="history" aria-label="Historial de movimientos" hidden>
+      <div class="screen-head"><h2>Historial y cierre</h2><button class="btn small" type="button" data-refresh>Actualizar</button></div>
+      <div id="historyBody"></div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ INICIO DE SESIÓN / CUENTA ============ -->
+<dialog id="dlgLogin" aria-labelledby="loginTitle" tabindex="-1">
+  <div id="loginForm">
+    <h2 id="loginTitle">Iniciar sesión</h2>
+    <p class="sub">Usa la cuenta de personal que te asignó el administrador.</p>
+    <form id="frmLogin" novalidate>
+      <div class="field">
+        <label for="loginEmail">Correo electrónico</label>
+        <input id="loginEmail" type="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">Contraseña</label>
+        <input id="loginPass" type="password" autocomplete="current-password" required>
+      </div>
+      <p class="msg" id="loginMsg" role="status"></p>
+      <div class="foot">
+        <button class="btn primary block" type="submit" id="btnLogin">Entrar</button>
+        <button class="btn block" type="button" data-close>Cancelar</button>
+      </div>
+    </form>
+  </div>
+  <div id="accountView" hidden>
+    <h2>Tu cuenta</h2>
+    <p class="sub" id="accountInfo"></p>
+    <div class="foot">
+      <a class="btn block" id="lnkAdmin" href="admin.html" hidden>Abrir panel administrativo</a>
+      <button class="btn block" type="button" id="btnLogout">Cerrar sesión</button>
+      <button class="btn primary block" type="button" data-close>Listo</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ============ ALMACÉN ACTUAL ============ -->
+<dialog id="dlgWarehouse" aria-labelledby="whTitle" tabindex="-1">
+  <h2 id="whTitle">Almacén de trabajo</h2>
+  <p class="sub">Las consultas, movimientos y conteos se registran en este almacén. Se recuerda en este dispositivo.</p>
+  <div id="whList" class="stack"></div>
+  <div class="foot"><button class="btn block" type="button" data-close>Cerrar</button></div>
+</dialog>
+
+<!-- ============ AJUSTES ============ -->
+<dialog id="dlgSettings" aria-labelledby="setTitle" tabindex="-1">
+  <h2 id="setTitle">Ajustes</h2>
+  <p class="sub">Se guardan solo en este dispositivo.</p>
+
+  <div class="sens" style="border-top:0; padding-top:0">
+    <label id="themeLbl">Apariencia</label>
+    <div class="seg" role="group" aria-labelledby="themeLbl">
+      <button type="button" data-theme-opt="auto" aria-pressed="true">Automática</button>
+      <button type="button" data-theme-opt="light" aria-pressed="false">Clara</button>
+      <button type="button" data-theme-opt="dark" aria-pressed="false">Oscura</button>
+    </div>
+    <small>«Automática» sigue el modo de tu teléfono.</small>
+  </div>
+
+  <div class="set"><label for="optSound">Sonido al reconocer</label><input class="switch" type="checkbox" id="optSound" role="switch"></div>
+  <div class="set"><label for="optVibrate">Vibración al reconocer</label><input class="switch" type="checkbox" id="optVibrate" role="switch"></div>
+
+  <div class="sens">
+    <label id="sensLbl">Rapidez para reconocer</label>
+    <div class="seg" role="group" aria-labelledby="sensLbl">
+      <button type="button" data-sens="fast" aria-pressed="false">Rápida</button>
+      <button type="button" data-sens="normal" aria-pressed="true">Normal</button>
+      <button type="button" data-sens="safe" aria-pressed="false">Segura</button>
+    </div>
+    <small>Si tarda en reconocer, prueba «Rápida». Si se confunde, prueba «Segura».</small>
+  </div>
+
+  <div class="camset" id="camSet" hidden>
+    <label>Cámara</label>
+    <div class="duo">
+      <button class="btn" type="button" id="btnFlip">Cambiar de cámara</button>
+      <button class="btn" type="button" id="btnStop">Apagar cámara</button>
+    </div>
+  </div>
+
+  <details class="adv">
+    <summary>Opciones avanzadas</summary>
+    <div class="field">
+      <label for="modelUrl">Enlace del modelo de reconocimiento</label>
+      <input id="modelUrl" type="url" inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="https://teachablemachine.withgoogle.com/models/…">
+      <div class="row2">
+        <button class="btn" type="button" id="btnModelSave" style="min-height:48px">Usar este enlace</button>
+        <button class="btn" type="button" id="btnModelReset" style="min-height:48px">Volver al original</button>
+      </div>
+      <p class="msg" id="modelMsg" role="status"></p>
+    </div>
+    <div class="set"><label for="optMirror">Voltear la imagen (espejo)</label><input class="switch" type="checkbox" id="optMirror" role="switch"></div>
+    <div class="set"><label for="optTech">Mostrar detalles técnicos<small>Porcentajes de cada etiqueta en vivo</small></label><input class="switch" type="checkbox" id="optTech" role="switch"></div>
+  </details>
+
+  <form method="dialog" class="foot"><button class="btn primary block" value="ok">Listo</button></form>
+</dialog>
+<!-- Librerías (versiones fijas). Si alguna no carga, la app sigue y muestra el error. -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module" src="js/almacen/app.js"></script>
+</body>
+</html>

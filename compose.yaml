@@ -1,0 +1,21 @@
+# Arranque local:  docker compose up -d --build
+# Variables: copia .env.example como .env (no se versiona) y completa los valores PÚBLICOS.
+# La base de datos es Supabase (en la nube): no se levanta ningún PostgreSQL local.
+name: inventario-calzado
+
+services:
+  web:
+    build: .
+    image: inventario-calzado-web:local
+    container_name: inventario-calzado-web
+    restart: unless-stopped
+    ports:
+      # 8088 por defecto (8080 suele estar ocupado). Cámbialo con APP_PORT en .env
+      - "${APP_PORT:-8088}:80"
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
+      TIENDA_NOMBRE: ${TIENDA_NOMBRE:-Tienda de calzado}
+      MONEDA: ${MONEDA:-Bs}
+    security_opt:
+      - no-new-privileges:true
