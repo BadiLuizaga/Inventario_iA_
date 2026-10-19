@@ -4,24 +4,11 @@
 // Uso: npm run dev:local
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
 import { extname, join, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ROOT, supabaseLocal } from './lib/supabase-local.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const PORT = Number(process.env.DEV_PORT) || 8089;
-
-let status;
-try {
-  const out = execFileSync('npx', ['supabase', 'status', '-o', 'env'], { cwd: ROOT, encoding: 'utf8', shell: true, stdio: ['ignore', 'pipe', 'ignore'] });
-  status = Object.fromEntries(out.split(/\r?\n/).map(l => l.match(/^([A-Z_]+)="?(.*?)"?$/)).filter(Boolean).map(m => [m[1], m[2]]));
-} catch {
-  console.error('El Supabase local no está en marcha. Ejecuta primero: npx supabase start');
-  process.exit(1);
-}
-const url = status.API_URL;
-const key = status.PUBLISHABLE_KEY || status.ANON_KEY;
-if (!url || !key || /^sb_secret_/.test(key)) { console.error('No se pudo leer la URL o la clave pública local.'); process.exit(1); }
+const { url, key, status } = supabaseLocal();
 
 const CONFIG = `/* Generado por scripts/dev-local.mjs: Supabase LOCAL (solo desarrollo). */
 export default { SUPABASE_URL: ${JSON.stringify(url)}, SUPABASE_PUBLISHABLE_KEY: ${JSON.stringify(key)}, TIENDA_NOMBRE: 'Tienda de calzado (LOCAL)', MONEDA: 'Bs' };

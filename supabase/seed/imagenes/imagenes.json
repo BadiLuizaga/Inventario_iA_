@@ -1,0 +1,132 @@
+[
+  {
+    "archivo": "escolar-clasico-negro.jpg",
+    "producto": "Escolar Clásico",
+    "color": "Negro",
+    "alt": "Zapatos escolares de cuero negro con cordones",
+    "credito": {
+      "obra": "Orthopedic heavy duty black leather school uniform shoes.jpg",
+      "autor": "Orthodontic Orthopedic",
+      "licencia": "CC0",
+      "licencia_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Orthopedic_heavy_duty_black_leather_school_uniform_shoes.jpg"
+    }
+  },
+  {
+    "archivo": "escolar-velcro-negro.jpg",
+    "producto": "Escolar Velcro",
+    "color": "Negro",
+    "alt": "Zapato escolar negro con cierre de velcro",
+    "credito": {
+      "obra": "A shoe with a worn-out velcro.jpg",
+      "autor": "Sima shimony",
+      "licencia": "CC BY-SA 4.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:A_shoe_with_a_worn-out_velcro.jpg"
+    }
+  },
+  {
+    "archivo": "escolar-velcro-azul-marino.jpg",
+    "producto": "Escolar Velcro",
+    "color": "Azul marino",
+    "alt": "Zapato con cierre de velcro en tono oscuro",
+    "credito": {
+      "obra": "Shoelaces Velcro.JPG",
+      "autor": "StromBer",
+      "licencia": "CC BY 3.0",
+      "licencia_url": "https://creativecommons.org/licenses/by/3.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Shoelaces_Velcro.JPG"
+    }
+  },
+  {
+    "archivo": "deportivo-runner-blanco.jpg",
+    "producto": "Deportivo Runner",
+    "color": "Blanco",
+    "alt": "Par de zapatillas deportivas blancas",
+    "credito": {
+      "obra": "Paar witte sneakers, merk G-Unit, maat 40, objectnr 87415-7.A-B.JPG",
+      "autor": "Museum Rotterdam (objeto de la marca G-Unit)",
+      "licencia": "CC BY-SA 3.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/3.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Paar_witte_sneakers,_merk_G-Unit,_maat_40,_objectnr_87415-7.A-B.JPG"
+    }
+  },
+  {
+    "archivo": "deportivo-runner-azul-marino.jpg",
+    "producto": "Deportivo Runner",
+    "color": "Azul marino",
+    "alt": "Par de zapatillas azul marino con suela de goma",
+    "credito": {
+      "obra": "Gola Harrier navy beige mens trainers.JPG",
+      "autor": "Root66",
+      "licencia": "CC BY-SA 3.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/3.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Gola_Harrier_navy_beige_mens_trainers.JPG"
+    }
+  },
+  {
+    "archivo": "oxford-negro.jpg",
+    "producto": "Zapato de Vestir Oxford",
+    "color": "Negro",
+    "alt": "Par de zapatos Oxford de cuero negro",
+    "credito": {
+      "obra": "Loake Ledbury oxford shoes.jpg",
+      "autor": "Nick-D",
+      "licencia": "CC BY-SA 4.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Loake_Ledbury_oxford_shoes.jpg"
+    }
+  },
+  {
+    "archivo": "oxford-cafe.jpg",
+    "producto": "Zapato de Vestir Oxford",
+    "color": "Café",
+    "alt": "Par de zapatos Oxford de cuero café",
+    "credito": {
+      "obra": "Pair of Crockett & Jones Connaught brown oxford shoes.jpg",
+      "autor": "Nick-D",
+      "licencia": "CC BY-SA 4.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Pair_of_Crockett_%26_Jones_Connaught_brown_oxford_shoes.jpg"
+    }
+  },
+  {
+    "archivo": "mocasin-casual-cafe.jpg",
+    "producto": "Mocasín Casual",
+    "color": "Café",
+    "alt": "Par de mocasines de cuero café",
+    "credito": {
+      "obra": "Brown JK loafers with 5cm heel (20200202020202).jpg",
+      "autor": "N509FZ",
+      "licencia": "CC BY-SA 4.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Brown_JK_loafers_with_5cm_heel_(20200202020202).jpg"
+    }
+  },
+  {
+    "archivo": "bota-trabajo-cafe.png",
+    "producto": "Bota de Trabajo",
+    "color": "Café",
+    "alt": "Par de botas de trabajo de cuero café con cordones",
+    "credito": {
+      "obra": "Rockrooster Norwood VAP611 work boots.png",
+      "autor": "Best For My Feet",
+      "licencia": "CC BY-SA 4.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Rockrooster_Norwood_VAP611_work_boots.png"
+    }
+  },
+  {
+    "archivo": "bota-trabajo-negro.jpg",
+    "producto": "Bota de Trabajo",
+    "color": "Negro",
+    "alt": "Bota de cuero oscuro con cordones",
+    "credito": {
+      "obra": "Leather boots men's.jpg",
+      "autor": "Petar Milošević",
+      "licencia": "CC BY-SA 4.0",
+      "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "fuente": "https://commons.wikimedia.org/wiki/File:Leather_boots_men%27s.jpg"
+    }
+  }
+]

@@ -69,7 +69,8 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+# 01 usuarios de prueba · 02 catálogo demo (simulado) · 03 mercado del Excel Manaco. SOLO LOCAL.
+sql_paths = ["./seed/*.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.
