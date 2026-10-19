@@ -67,11 +67,11 @@ npx serve .
 
 | Rol | Usuario | Contraseña | Entra en |
 |---|---|---|---|
-| 👑 Admin | `admin@tienda.bo` | `[AQUÍ PONER CONTRASEÑA]` | `/admin.html` |
-| 📦 Almacenero | `almacenero@tienda.bo` | `[AQUÍ PONER CONTRASEÑA]` | `/almacen.html` |
-| 🛒 Cliente | `cliente@tienda.bo` | `[AQUÍ PONER CONTRASEÑA]` | Tienda → Mi cuenta |
+| 👑 Admin | `admin@tienda.bo` | `admin123` | `/admin.html` |
+| 📦 Almacenero | `almacenero@tienda.bo` | `almacenero123` | `/almacen.html` |
+| 🛒 Cliente | `cliente@tienda.bo` | `cliente123` | Tienda → Mi cuenta |
 
-> ⚠️ Credenciales **solo para pruebas**. No subas contraseñas reales al repositorio.
+
 
 ---
 
