@@ -157,3 +157,10 @@ export const guardarConfigTienda = (agotado, pocas) => db().rpc('config_tienda_g
 export async function perfiles() {
   return unwrap(await db().from('perfiles').select('id, nombre, rol, activo').order('nombre'));
 }
+
+/* ---------- mercado (referencia externa: Excel del caso Manaco) ---------- */
+export async function mercadoComercio() {
+  return unwrap(await db().from('mercado_comercio')
+    .select('pais_reportante, flujo, anio, codigo_sa6, categoria, socio, valor_usd, pares, valor_usd_por_par')
+    .order('anio').order('flujo').order('valor_usd', { ascending: false }).limit(10000));
+}

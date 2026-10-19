@@ -7,8 +7,11 @@ import { db, unwrap } from '../supabase.js';
 import { existencias, movimientos, pedidos, maestros, nombreAlmacen, TIPO_MOV } from '../services/interno.js';
 import { ESTADO_PEDIDO } from '../services/tienda.js';
 import { dataTable, downloadCsv } from './util.js';
+import { renderMercado } from './mercado.js';
 
 const money = v => fmtMoney(v, true);
+// replaceChildren convierte null en el texto «null» y los arreglos en «[object …]»: se aplanan y filtran antes
+const put = (node, ...kids) => node.replaceChildren(...kids.flat().filter(k => k !== null && k !== undefined && k !== false));
 const count = async (table, f = q => q) => {
   const { count: n, error } = await f(db().from(table).select('*', { count: 'exact', head: true }));
   if (error) throw error;
@@ -38,7 +41,7 @@ export async function renderResumen(main) {
       [nPub > 0, 'Publica el producto en la tienda', '#/productos'],
     ];
     const pending = steps.filter(s => !s[0]).length;
-    main.replaceChildren(
+    put(main,
       el('div', { class: 'kpi-grid' },
         kpi('Productos', nProd, '#/productos'), kpi('Publicados en tienda', nPub, '#/productos'), kpi('Variantes', nVar, '#/productos'),
         kpi('Unidades en stock', unidades, '#/reportes?r=stock'), kpi('Variantes bajo el mínimo', bajos, '#/reportes?r=bajo', bajos > 0),
@@ -56,6 +59,7 @@ export async function renderResumen(main) {
 const REPORTES = [
   ['stock', 'Stock actual'], ['bajo', 'Bajo stock'], ['movimientos', 'Entradas y salidas'],
   ['conteos', 'Diferencias de conteo'], ['actividad', 'Actividad por usuario'], ['ventas', 'Pedidos y ventas'],
+  ['mercado', 'Mercado Manaco'],
 ];
 
 export async function renderReportes(main, go, params) {
@@ -79,6 +83,8 @@ export async function renderReportes(main, go, params) {
   const sinDatos = (title, text) => out.replaceChildren(emptyState({ icon: 'chart', title, text }));
 
   try {
+    if (r === 'mercado') return await renderMercado(out, params, extra => go('#/reportes?' + new URLSearchParams({ r, ...extra })));
+
     if (r === 'stock' || r === 'bajo') {
       const [rows, m] = await Promise.all([existencias({ soloBajo: r === 'bajo' }), maestros()]);
       if (!rows.length) return sinDatos(r === 'bajo' ? 'No hay variantes bajo el mínimo' : 'Todavía no hay existencias registradas',
@@ -90,7 +96,7 @@ export async function renderReportes(main, go, params) {
         { label: 'Almacén', value: x => almName.get(x.almacen_id) || x.almacen }, { label: 'Producto', value: x => x.producto },
         { label: 'Talla', value: x => x.talla || '—' }, { label: 'Color', value: x => x.color || '—' }, { label: 'SKU', value: x => x.sku || '—' },
         { label: 'Ubicación', value: x => x.ubicacion || '—' }, { label: 'Mínimo', value: x => x.stock_minimo, num: true }, { label: 'Stock', value: x => x.cantidad, num: true }];
-      out.replaceChildren(
+      put(out,
         r === 'stock' ? el('div', { class: 'kpi-grid' }, ...[...porAlm].map(([id, n]) => el('div', { class: 'kpi' }, el('span', { text: almName.get(id) || '—' }), el('strong', { text: String(n) })))) : null,
         csvBtn(`${r === 'bajo' ? 'bajo-stock' : 'stock'}-${todayISO()}.csv`, cols, rows),
         dataTable(cols, rows, { rowClass: x => x.bajo_minimo ? 'low' : '' }));
@@ -112,7 +118,7 @@ export async function renderReportes(main, go, params) {
         const cols = [{ label: 'Fecha', value: m => fmtDate(m.creado_en) }, { label: 'Tipo', value: m => TIPO_MOV[m.tipo].text }, { label: 'Producto', value: m => `${m.producto}${m.talla ? ' · T' + m.talla : ''}${m.color ? ' · ' + m.color : ''}` },
           { label: 'Almacén', value: m => m.almacen }, { label: 'Cantidad', value: m => TIPO_MOV[m.tipo].signo + m.cantidad, num: true }, { label: 'Saldo', value: m => m.saldo, num: true },
           { label: 'Usuario', value: m => m.usuario }, { label: 'Motivo', value: m => m.motivo || '—' }, { label: 'Referencia', value: m => m.referencia || '—' }];
-        out.replaceChildren(
+        put(out,
           el('div', { class: 'kpi-grid' }, ...Object.entries(tot).map(([t, n]) => el('div', { class: 'kpi' }, el('span', { text: TIPO_MOV[t].text }), el('strong', { text: String(n) })))),
           el('div', { class: 'card' }, el('h3', { text: 'Por día (unidades)' }), dataTable([{ label: 'Día', value: o => o.d }, { label: 'Movimientos', value: o => o.n, num: true }, { label: 'Ingresos', value: o => '+' + o.entra, num: true }, { label: 'Egresos', value: o => '−' + o.sale, num: true }], [...porDia.values()])),
           csvBtn(`movimientos-${desde}-a-${hasta}.csv`, cols, rows), dataTable(cols, rows.slice(0, 500)),
@@ -129,7 +135,7 @@ export async function renderReportes(main, go, params) {
         const max = Math.max(...list.map(o => o.n));
         const cols = [{ label: 'Usuario', value: o => o.usuario }, { label: 'Movimientos', value: o => o.n, num: true }, { label: 'Unidades', value: o => o.unidades, num: true },
           { label: 'Detalle', value: o => Object.entries(o.tipos).map(([t, n]) => `${TIPO_MOV[t].text}: ${n}`).join(', ') }, { label: 'Último', value: o => fmtDate(o.ultimo) }];
-        out.replaceChildren(
+        put(out,
           el('div', { class: 'card' }, el('h3', { text: 'Movimientos por usuario' }), el('div', { class: 'bars' }, ...list.map(o => {
             const fill = el('div', { class: 'bar-fill' }); fill.style.width = `${(o.n / max) * 100}%`;
             return el('div', { class: 'bar-row' }, el('span', { text: o.usuario }), el('div', { class: 'bar-track' }, fill), el('strong', { text: String(o.n) }));
@@ -150,7 +156,7 @@ export async function renderReportes(main, go, params) {
         { label: 'Sistema', value: x => x.cantidad_sistema, num: true }, { label: 'Contado', value: x => x.cantidad_contada, num: true },
         { label: 'Diferencia', value: x => { const d = x.cantidad_contada - x.cantidad_sistema; return (d > 0 ? '+' : '') + d; }, num: true },
         { label: 'Estado', value: x => x.aplicada ? 'Ajuste aplicado' : x.conteos.estado === 'abierto' ? 'Pendiente de revisión' : x.conteos.estado === 'anulado' ? 'Conteo anulado' : 'No aplicado' }];
-      out.replaceChildren(
+      put(out,
         el('div', { class: 'kpi-grid' },
           el('div', { class: 'kpi' }, el('span', { text: 'Líneas contadas' }), el('strong', { text: String(rows.length) })),
           el('div', { class: 'kpi warn' }, el('span', { text: 'Con diferencia' }), el('strong', { text: String(diffs.length) })),
@@ -176,7 +182,7 @@ export async function renderReportes(main, go, params) {
       const top = [...prod.values()].sort((a, b) => b.n - a.n);
       const validos = rows.filter(o => o.estado !== 'cancelado').length;
       const cols = [{ label: 'Artículo', value: x => x.k }, { label: 'Unidades', value: x => x.n, num: true }, { label: 'Importe', value: x => money(x.importe), csv: x => x.importe.toFixed(2), num: true }];
-      out.replaceChildren(
+      put(out,
         el('div', { class: 'kpi-grid' },
           el('div', { class: 'kpi' }, el('span', { text: 'Pedidos (no cancelados)' }), el('strong', { text: String(validos) })),
           el('div', { class: 'kpi' }, el('span', { text: 'Importe pedido' }), el('strong', { text: money(total) })),

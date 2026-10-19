@@ -11,6 +11,7 @@ COPY index.html almacen.html admin.html manifest.webmanifest /usr/share/nginx/ht
 COPY icon-192.png icon-512.png icon-maskable-512.png /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js
+COPY modelos /usr/share/nginx/html/modelos
 
 # El usuario de Nginx debe poder escribir config.js al arrancar
 RUN rm -f /usr/share/nginx/html/js/config.js \

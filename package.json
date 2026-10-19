@@ -10,7 +10,11 @@
     "android:open": "npx cap open android",
     "test:db": "node supabase/tests/migraciones.test.mjs",
     "dev:local": "node scripts/dev-local.mjs",
-    "supabase:local": "supabase start"
+    "supabase:local": "supabase start",
+    "test:almacen": "node scripts/probar-almacen.mjs",
+    "mercado:sql": "python scripts/excel_a_sql.py",
+    "seed:imagenes": "node scripts/cargar-imagenes-demo.mjs",
+    "entrenar:modelo": "node scripts/entrenar-modelo.mjs"
   },
   "devDependencies": {
     "@capacitor/android": "8.5.3",

@@ -24,6 +24,19 @@
 
 ---
 
+## 🧪 Todo local — Supabase en tu PC
+
+```bash
+npm install
+npx supabase start     # base de datos + migraciones + datos de prueba (requiere Docker Desktop abierto)
+npm run seed:imagenes  # fotos del catálogo demo (créditos en supabase/seed/imagenes/CREDITOS.md)
+npm run dev:local      # http://localhost:8089 · /almacen.html · /admin.html
+```
+
+> Carga los usuarios de prueba, un catálogo demo de Manaco (simulado) y las 240 filas del Excel del caso (Panel → Reportes → **Mercado Manaco**).
+
+---
+
 ## 🐳 Opción 1 — Docker
 
 Desde la raíz del proyecto:
@@ -49,7 +62,7 @@ cp js/config.example.js js/config.js   # poner la URL y la clave pública de Sup
 npx serve .
 ```
 
-> La base de datos se crea una sola vez con `supabase/migrations/0001…` y `0002…` (ver la [guía completa](docs/GUIA.md)).
+> La base de datos se crea una sola vez con `supabase/migrations/0001…`, `0002…` y `0003…` (ver la [guía completa](docs/GUIA.md)).
 
 ---
 
@@ -71,6 +84,14 @@ npx serve .
 | 📦 Almacenero | `almacenero@tienda.bo` | `almacenero123` | `/almacen.html` |
 | 🛒 Cliente | `cliente@tienda.bo` | `cliente123` | Tienda → Mi cuenta |
 
+> Los crea el seed **local** (`supabase/seed/01_usuarios.sql`). En un proyecto real se crean a mano (ver la [guía](docs/GUIA.md#8-proyecto-supabase-en-la-nube)).
+
+## 🧪 Pruebas
+
+```bash
+npm run test:db        # migraciones y permisos (PostgreSQL en memoria)
+npm run test:almacen   # API del almacenero contra el Supabase local
+```
 
 
 ---

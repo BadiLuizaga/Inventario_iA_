@@ -1,12 +1,14 @@
 /* ------------------------------------------------------------------ *
- * Modelo de Teachable Machine (el mismo del clasificador original).
+ * Modelo de Teachable Machine. El de zapatos vive en el propio sitio
+ * (modelos/zapatos/, entrenado con `npm run entrenar:modelo`), así que
+ * no depende de los servidores de Google.
  * Las etiquetas se leen del metadata.json del modelo: no se cambian aquí.
  * ------------------------------------------------------------------ */
 import { el } from '../ui.js';
 
-export const DEFAULT_MODEL = 'https://teachablemachine.withgoogle.com/models/3ok2iDQGD/';
-// Modelos anteriores: si alguien los tenía guardados, se reemplazan por el actual
-const LEGACY_MODELS = ['-OAMSofUz', 'WT3N3SwBa', '6X92zaJfJ'];
+export const DEFAULT_MODEL = './modelos/zapatos/';
+// Modelos anteriores (3ok2iDQGD = bebidas de prueba): si alguien los tenía guardados, se reemplazan por el actual
+const LEGACY_MODELS = ['-OAMSofUz', 'WT3N3SwBa', '6X92zaJfJ', '3ok2iDQGD'];
 export const isLegacy = u => LEGACY_MODELS.some(id => (u || '').includes(id));
 
 export function normalizeUrl(u) {

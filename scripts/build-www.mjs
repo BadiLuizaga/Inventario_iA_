@@ -23,6 +23,7 @@ mkdirSync(OUT);
 for (const f of ['almacen.html', 'admin.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png']) cpSync(f, `${OUT}/${f}`);
 cpSync('css', `${OUT}/css`, { recursive: true });
 cpSync('js', `${OUT}/js`, { recursive: true });
+cpSync('modelos', `${OUT}/modelos`, { recursive: true });   // modelo de la cámara (sin depender de Google)
 // Punto de entrada de la app = herramienta de almacén
 writeFileSync(`${OUT}/index.html`, readFileSync('almacen.html', 'utf8'));
 console.log('www/ listo (inicio: herramienta de almacén).');

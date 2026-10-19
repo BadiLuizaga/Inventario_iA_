@@ -1,11 +1,11 @@
 # Seguridad y permisos
 
-Definidos en `supabase/migrations/0001_esquema_inicial.sql` y `0002_tienda_variantes_almacenes.sql`. Las comprobaciones automáticas están en `supabase/tests/migraciones.test.mjs` (`npm run test:db`).
+Definidos en `supabase/migrations/0001_esquema_inicial.sql`, `0002_tienda_variantes_almacenes.sql` y `0003_mercado_calzado.sql`. Las comprobaciones automáticas están en `supabase/tests/migraciones.test.mjs` (`npm run test:db`).
 
 ## Principios
 
 - El navegador y la app Android usan **solo la clave pública** (publishable o anon). La app y el contenedor se niegan a usar `sb_secret_…` o `service_role`.
-- **RLS activado en las 22 tablas.** El rol `anon` no tiene privilegios sobre ninguna tabla.
+- **RLS activado en las 23 tablas.** El rol `anon` no tiene privilegios sobre ninguna tabla.
 - **Ocultar botones no es seguridad.** Cada operación la comprueba la base de datos:
   - con políticas RLS para la lectura y para los datos maestros;
   - con funciones `security definer` (con `search_path = ''`) para todo lo que cambia stock, pedidos, conteos o roles.
@@ -35,6 +35,7 @@ Definidos en `supabase/migrations/0001_esquema_inicial.sql` y `0002_tienda_varia
 | Ver catálogo publicado y disponibilidad (3 estados) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Crear pedido / ver y cancelar los propios (pendientes) | ❌ | ✅ | ✅* | ✅* | ✅* |
 | Ver existencias, movimientos, conteos, almacenes | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Ver el mercado de calzado (`mercado_comercio`, Excel Manaco; nadie lo escribe desde la app) | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Entradas, salidas, devoluciones; registrar conteos | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Ajustes; aplicar conteos | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Ver todos los pedidos y clientes | ❌ | ❌ | ❌ | ✅ | ✅ |

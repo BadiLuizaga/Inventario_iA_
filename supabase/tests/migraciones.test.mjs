@@ -33,7 +33,7 @@ await db.exec(`
 `);
 
 console.log('Migraciones');
-for (const f of ['0001_esquema_inicial.sql', '0002_tienda_variantes_almacenes.sql']) {
+for (const f of ['0001_esquema_inicial.sql', '0002_tienda_variantes_almacenes.sql', '0003_mercado_calzado.sql']) {
   try { await db.exec(readFileSync(`${MIG}/${f}`, 'utf8')); ok(true, `${f} se aplica sin errores`); }
   catch (e) { ok(false, `${f}: ${e.message}`); process.exit(1); }
 }
@@ -211,6 +211,20 @@ await fails('cli1', `select public.crear_pedido($1::jsonb, 'retiro', $2, '', '70
 const c2 = (await one('lector', 'select public.conteo_crear($1) as id', [a1])).id;
 await fails('lector', `select * from public.conteo_aplicar($1, '{}'::uuid[])`, /al menos un artículo/, 'aplicar conteo con selección vacía rechazado', [c2]);
 ok((await one(null, 'select estado from public.conteos where id = $1', [c2])).estado === 'abierto', 'y el conteo sigue abierto');
+
+console.log('\nMercado de calzado (0003)');
+// Carga como propietario, igual que el seed
+await db.query(`insert into public.mercado_comercio (pais_reportante, flujo, anio, codigo_sa6, categoria, socio, valor_usd, pares) values
+  ('España', 'importacion', 2024, '640411', 'Deportivo', 'China', 1000, 40), ('España', 'importacion', 2024, '640411', 'Deportivo', 'China', 500, 0)`);
+ok((await one(null, 'select valor_usd_por_par::text p from public.mercado_comercio where pares = 40')).p === '25.00', 'valor por par calculado en la base (1000 / 40)');
+ok((await one(null, 'select valor_usd_por_par p from public.mercado_comercio where pares = 0')).p === null, 'sin pares no hay valor por par');
+await fails(null, `insert into public.mercado_comercio (pais_reportante, flujo, anio, codigo_sa6, categoria, socio, valor_usd) values ('España', 'otro', 2024, '640411', 'C', 'S', 1)`, /check constraint/, 'flujo desconocido rechazado');
+await fails('anon', 'select * from public.mercado_comercio', /permission denied/, 'anon no lee el mercado');
+ok((await as('cli1', 'select * from public.mercado_comercio')).length === 0, 'cliente ve 0 filas del mercado');
+ok((await as('oper', 'select * from public.mercado_comercio')).length === 0, 'cuenta desactivada ve 0 filas del mercado');
+ok((await as('admin', 'select * from public.mercado_comercio')).length === 2, 'personal activo (lector) consulta el mercado');
+await fails('lector', `insert into public.mercado_comercio (pais_reportante, flujo, anio, codigo_sa6, categoria, socio, valor_usd) values ('España', 'exportacion', 2024, '640411', 'C', 'S', 1)`, /permission denied/, 'ni un admin escribe en el mercado desde la app');
+await fails('lector', `delete from public.mercado_comercio`, /permission denied/, 'ni lo borra');
 
 console.log(`\n${pass} correctas, ${fail} fallidas`);
 process.exit(fail ? 1 : 0);

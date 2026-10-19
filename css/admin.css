@@ -59,3 +59,7 @@ main{padding:24px; display:grid; gap:18px; align-content:start; outline:none}
 .bar-row{display:grid; grid-template-columns:minmax(90px,180px) 1fr auto; gap:10px; align-items:center; font-size:.88rem}
 .bar-track{height:10px; border-radius:5px; background:var(--section); overflow:hidden}
 .bar-fill{height:100%; background:var(--blue); border-radius:5px}
+.bar-fill.alt, .legend i.alt{background:var(--navy)}
+.bar-pair{display:grid; gap:3px}
+.legend{display:flex; flex-wrap:wrap; gap:16px; font-size:.82rem; color:var(--muted)}
+.legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:middle; background:var(--blue)}

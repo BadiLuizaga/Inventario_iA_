@@ -1,0 +1,295 @@
+{
+  "fecha": "2026-10-19T02:44:18.174Z",
+  "parametros": {
+    "denseUnits": 100,
+    "epochs": 50,
+    "learningRate": 0.001,
+    "batchSize": 16
+  },
+  "acierto": 0.8105263157894737,
+  "aciertos": 77,
+  "total": 95,
+  "porClase": [
+    {
+      "clase": "Bota de Trabajo",
+      "aciertos": 14,
+      "total": 15
+    },
+    {
+      "clase": "Deportivo Runner",
+      "aciertos": 27,
+      "total": 32
+    },
+    {
+      "clase": "Escolar Clásico",
+      "aciertos": 3,
+      "total": 6
+    },
+    {
+      "clase": "Escolar Velcro",
+      "aciertos": 1,
+      "total": 4
+    },
+    {
+      "clase": "Mocasín Casual",
+      "aciertos": 8,
+      "total": 11
+    },
+    {
+      "clase": "Zapato de Vestir Oxford",
+      "aciertos": 14,
+      "total": 16
+    },
+    {
+      "clase": "Fondo y otros",
+      "aciertos": 10,
+      "total": 11
+    }
+  ],
+  "errores": [
+    "Bota de Trabajo/122.jpg → Zapato de Vestir Oxford (100 %)",
+    "Deportivo Runner/016.jpg → Escolar Clásico (93 %)",
+    "Deportivo Runner/069.jpg → Escolar Clásico (95 %)",
+    "Deportivo Runner/153.jpg → Bota de Trabajo (85 %)",
+    "Deportivo Runner/180.jpg → Mocasín Casual (85 %)",
+    "Deportivo Runner/192.jpg → Bota de Trabajo (91 %)",
+    "Escolar Clásico/017.jpg → Bota de Trabajo (91 %)",
+    "Escolar Clásico/090.jpg → Mocasín Casual (80 %)",
+    "Escolar Clásico/125.jpg → Bota de Trabajo (97 %)",
+    "Escolar Velcro/013.jpg → Deportivo Runner (88 %)",
+    "Escolar Velcro/024.jpg → Deportivo Runner (98 %)",
+    "Escolar Velcro/039.jpg → Escolar Clásico (86 %)",
+    "Mocasín Casual/060.jpg → Zapato de Vestir Oxford (98 %)",
+    "Mocasín Casual/070.jpg → Escolar Velcro (59 %)",
+    "Mocasín Casual/079.jpg → Zapato de Vestir Oxford (66 %)",
+    "Zapato de Vestir Oxford/069.jpg → Escolar Clásico (91 %)",
+    "Zapato de Vestir Oxford/091.jpg → Deportivo Runner (92 %)",
+    "Fondo y otros/069.jpg → Escolar Velcro (74 %)"
+  ],
+  "fotosPrueba": [
+    {
+      "clase": "Bota de Trabajo",
+      "archivo": "015.jpg",
+      "prediccion": "Bota de Trabajo",
+      "probabilidad": 0.9999914765357971,
+      "correcta": true
+    },
+    {
+      "clase": "Bota de Trabajo",
+      "archivo": "149.jpg",
+      "prediccion": "Bota de Trabajo",
+      "probabilidad": 0.9999818801879883,
+      "correcta": true
+    },
+    {
+      "clase": "Bota de Trabajo",
+      "archivo": "143.jpg",
+      "prediccion": "Bota de Trabajo",
+      "probabilidad": 0.9999179840087891,
+      "correcta": true
+    },
+    {
+      "clase": "Bota de Trabajo",
+      "archivo": "168.jpg",
+      "prediccion": "Bota de Trabajo",
+      "probabilidad": 0.999821662902832,
+      "correcta": true
+    },
+    {
+      "clase": "Bota de Trabajo",
+      "archivo": "136.jpg",
+      "prediccion": "Bota de Trabajo",
+      "probabilidad": 0.9997053742408752,
+      "correcta": true
+    },
+    {
+      "clase": "Bota de Trabajo",
+      "archivo": "082.jpg",
+      "prediccion": "Bota de Trabajo",
+      "probabilidad": 0.9994317889213562,
+      "correcta": true
+    },
+    {
+      "clase": "Deportivo Runner",
+      "archivo": "041.jpg",
+      "prediccion": "Deportivo Runner",
+      "probabilidad": 1,
+      "correcta": true
+    },
+    {
+      "clase": "Deportivo Runner",
+      "archivo": "160.jpg",
+      "prediccion": "Deportivo Runner",
+      "probabilidad": 1,
+      "correcta": true
+    },
+    {
+      "clase": "Deportivo Runner",
+      "archivo": "186.jpg",
+      "prediccion": "Deportivo Runner",
+      "probabilidad": 1,
+      "correcta": true
+    },
+    {
+      "clase": "Deportivo Runner",
+      "archivo": "296.jpg",
+      "prediccion": "Deportivo Runner",
+      "probabilidad": 1,
+      "correcta": true
+    },
+    {
+      "clase": "Deportivo Runner",
+      "archivo": "090.jpg",
+      "prediccion": "Deportivo Runner",
+      "probabilidad": 0.9999980926513672,
+      "correcta": true
+    },
+    {
+      "clase": "Deportivo Runner",
+      "archivo": "115.jpg",
+      "prediccion": "Deportivo Runner",
+      "probabilidad": 0.9999961853027344,
+      "correcta": true
+    },
+    {
+      "clase": "Escolar Clásico",
+      "archivo": "028.jpg",
+      "prediccion": "Escolar Clásico",
+      "probabilidad": 0.8935567736625671,
+      "correcta": true
+    },
+    {
+      "clase": "Escolar Velcro",
+      "archivo": "006.jpg",
+      "prediccion": "Escolar Velcro",
+      "probabilidad": 0.9721512198448181,
+      "correcta": true
+    },
+    {
+      "clase": "Mocasín Casual",
+      "archivo": "023.jpg",
+      "prediccion": "Mocasín Casual",
+      "probabilidad": 0.9999942779541016,
+      "correcta": true
+    },
+    {
+      "clase": "Mocasín Casual",
+      "archivo": "206.jpg",
+      "prediccion": "Mocasín Casual",
+      "probabilidad": 0.9999904632568359,
+      "correcta": true
+    },
+    {
+      "clase": "Mocasín Casual",
+      "archivo": "193.jpg",
+      "prediccion": "Mocasín Casual",
+      "probabilidad": 0.9997339248657227,
+      "correcta": true
+    },
+    {
+      "clase": "Mocasín Casual",
+      "archivo": "047.jpg",
+      "prediccion": "Mocasín Casual",
+      "probabilidad": 0.9985343813896179,
+      "correcta": true
+    },
+    {
+      "clase": "Mocasín Casual",
+      "archivo": "052.jpg",
+      "prediccion": "Mocasín Casual",
+      "probabilidad": 0.9962742924690247,
+      "correcta": true
+    },
+    {
+      "clase": "Mocasín Casual",
+      "archivo": "016.jpg",
+      "prediccion": "Mocasín Casual",
+      "probabilidad": 0.9948956370353699,
+      "correcta": true
+    },
+    {
+      "clase": "Zapato de Vestir Oxford",
+      "archivo": "056.jpg",
+      "prediccion": "Zapato de Vestir Oxford",
+      "probabilidad": 0.9999980926513672,
+      "correcta": true
+    },
+    {
+      "clase": "Zapato de Vestir Oxford",
+      "archivo": "131.jpg",
+      "prediccion": "Zapato de Vestir Oxford",
+      "probabilidad": 0.9998130798339844,
+      "correcta": true
+    },
+    {
+      "clase": "Zapato de Vestir Oxford",
+      "archivo": "035.jpg",
+      "prediccion": "Zapato de Vestir Oxford",
+      "probabilidad": 0.9997597336769104,
+      "correcta": true
+    },
+    {
+      "clase": "Zapato de Vestir Oxford",
+      "archivo": "086.jpg",
+      "prediccion": "Zapato de Vestir Oxford",
+      "probabilidad": 0.9995671510696411,
+      "correcta": true
+    },
+    {
+      "clase": "Zapato de Vestir Oxford",
+      "archivo": "040.jpg",
+      "prediccion": "Zapato de Vestir Oxford",
+      "probabilidad": 0.9983333945274353,
+      "correcta": true
+    },
+    {
+      "clase": "Zapato de Vestir Oxford",
+      "archivo": "064.jpg",
+      "prediccion": "Zapato de Vestir Oxford",
+      "probabilidad": 0.9979831576347351,
+      "correcta": true
+    },
+    {
+      "clase": "Fondo y otros",
+      "archivo": "133.jpg",
+      "prediccion": "Fondo y otros",
+      "probabilidad": 1,
+      "correcta": true
+    },
+    {
+      "clase": "Fondo y otros",
+      "archivo": "119.jpg",
+      "prediccion": "Fondo y otros",
+      "probabilidad": 0.9998522400856018,
+      "correcta": true
+    },
+    {
+      "clase": "Fondo y otros",
+      "archivo": "059.jpg",
+      "prediccion": "Fondo y otros",
+      "probabilidad": 0.9997730851173401,
+      "correcta": true
+    },
+    {
+      "clase": "Fondo y otros",
+      "archivo": "076.jpg",
+      "prediccion": "Fondo y otros",
+      "probabilidad": 0.9983734488487244,
+      "correcta": true
+    },
+    {
+      "clase": "Fondo y otros",
+      "archivo": "109.jpg",
+      "prediccion": "Fondo y otros",
+      "probabilidad": 0.9982772469520569,
+      "correcta": true
+    },
+    {
+      "clase": "Fondo y otros",
+      "archivo": "012.jpg",
+      "prediccion": "Fondo y otros",
+      "probabilidad": 0.984872579574585,
+      "correcta": true
+    }
+  ]
+}

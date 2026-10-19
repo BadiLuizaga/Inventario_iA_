@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Entrenar modelo de la cámara</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 24px; color: #0b1f3f; background: #f3f5f8; }
+  h1 { font-size: 1.3rem; margin: 0 0 8px; }
+  pre { background: #fff; border: 1px solid #d6dce6; border-radius: 10px; padding: 14px; max-height: 70vh; overflow: auto; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Entrenando el modelo de la cámara…</h1>
+<p>No cierres esta pestaña hasta que diga «Listo». Usa la misma librería que la app (Teachable Machine).</p>
+<pre id="log"></pre>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+<script>
+(async () => {
+  const MAX_ENTRENO = 90;            // fotos originales por clase, para no desequilibrar
+  const PARAMS = { denseUnits: 100, epochs: 50, learningRate: 0.001, batchSize: 16 };   // valores de Teachable Machine
+  const UMBRAL_PRUEBA = 0.85, FOTOS_PRUEBA = 6;
+
+  const $log = document.getElementById('log');
+  const log = t => { $log.textContent += t + '\n'; $log.scrollTop = $log.scrollHeight; fetch('/progreso', { method: 'POST', body: t }).catch(() => {}); };
+  const url = (c, f) => `/fotos/${encodeURIComponent(c)}/${encodeURIComponent(f)}`;
+  const cargar = src => new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => mal(new Error(src)); i.src = src; });
+  // Recorte cuadrado central a 224×224 (lo que espera el modelo), con espejo y acercamiento opcionales
+  function lienzo(img, { espejo = false, zoom = 1 } = {}) {
+    const c = document.createElement('canvas'); c.width = c.height = 224;
+    const g = c.getContext('2d');
+    const s = Math.min(img.naturalWidth, img.naturalHeight) * zoom;
+    if (espejo) { g.translate(224, 0); g.scale(-1, 1); }
+    g.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 224, 224);
+    return c;
+  }
+
+  try {
+    const { clases } = await (await fetch('/lista')).json();
+    const etiquetas = clases.map(c => c.nombre);
+    log(`Clases: ${etiquetas.join(' · ')}`);
+    const modelo = await tmImage.createTeachable(
+      { tfjsVersion: tf.version.tfjs, tmVersion: '2.4.18', packageVersion: tmImage.version, packageName: '@teachablemachine/image', modelName: 'zapatos-manaco-demo' },
+      { version: 2, alpha: 0.35 });
+    modelo.setLabels(etiquetas);
+    modelo.setSeed('manaco');
+
+    const prueba = [];
+    for (const [i, c] of clases.entries()) {
+      const pruebaClase = c.fotos.filter((_, k) => k % 5 === 2);              // 20 % reservado, nunca se entrena
+      const entreno = c.fotos.filter((_, k) => k % 5 !== 2).slice(0, MAX_ENTRENO);
+      const variantes = [{}, { espejo: true }, ...(entreno.length < 40 ? [{ zoom: 0.8 }, { zoom: 0.8, espejo: true }] : [])];
+      for (const f of entreno) {
+        try { const img = await cargar(url(c.nombre, f)); for (const v of variantes) await modelo.addExample(i, lienzo(img, v)); }
+        catch (e) { log(`  (no se pudo leer ${c.nombre}/${f})`); }
+      }
+      prueba.push(...pruebaClase.map(f => ({ clase: c.nombre, archivo: f })));
+      log(`${c.nombre}: ${entreno.length} fotos × ${variantes.length} variantes para entrenar, ${pruebaClase.length} reservadas`);
+    }
+
+    log('Entrenando…');
+    await modelo.train(PARAMS, { onEpochEnd: async (e, l) => { if ((e + 1) % 5 === 0) log(`  época ${e + 1}/${PARAMS.epochs} · acierto ${(l.acc * 100).toFixed(1)} % · validación ${(l.val_acc * 100).toFixed(1)} %`); } });
+
+    log('Midiendo con las fotos reservadas…');
+    const resultados = [];
+    for (const p of prueba) {
+      try {
+        const r = await modelo.predict(lienzo(await cargar(url(p.clase, p.archivo))));
+        const top = r.reduce((a, b) => (b.probability > a.probability ? b : a));
+        resultados.push({ ...p, prediccion: top.className, probabilidad: top.probability, correcta: top.className === p.clase });
+      } catch (_) {}
+    }
+    const porClase = etiquetas.map(c => { const rs = resultados.filter(r => r.clase === c); return { clase: c, aciertos: rs.filter(r => r.correcta).length, total: rs.length }; });
+    const aciertos = resultados.filter(r => r.correcta).length;
+    const fotosPrueba = etiquetas.flatMap(c => resultados.filter(r => r.clase === c && r.correcta && r.probabilidad >= UMBRAL_PRUEBA)
+      .sort((a, b) => b.probabilidad - a.probabilidad).slice(0, FOTOS_PRUEBA));
+    const errores = resultados.filter(r => !r.correcta).map(r => `${r.clase}/${r.archivo} → ${r.prediccion} (${(r.probabilidad * 100).toFixed(0)} %)`);
+    for (const c of porClase) log(`  ${c.clase}: ${c.aciertos}/${c.total}`);
+    log(`Acierto total con fotos no vistas: ${(aciertos / resultados.length * 100).toFixed(1)} %`);
+
+    let art;
+    await modelo.save(tf.io.withSaveHandler(async a => { art = a; return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } }; }));
+    const bytes = new Uint8Array(art.weightData); let bin = '';
+    for (let k = 0; k < bytes.length; k += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(k, k + 0x8000));
+    const metadata = { ...modelo.getMetadata(), labels: etiquetas, timeStamp: new Date().toISOString(), imageSize: 224 };
+    const cuerpo = {
+      modelJson: { modelTopology: art.modelTopology, format: art.format || 'layers-model', generatedBy: art.generatedBy, convertedBy: art.convertedBy || null,
+        weightsManifest: [{ paths: ['./model.weights.bin'], weights: art.weightSpecs }] },
+      pesos: btoa(bin), metadata,
+      reporte: { fecha: metadata.timeStamp, parametros: PARAMS, acierto: aciertos / resultados.length, aciertos, total: resultados.length, porClase, errores, fotosPrueba },
+    };
+    const res = await fetch('/guardar', { method: 'POST', body: JSON.stringify(cuerpo) });
+    log(res.ok ? 'Listo: modelo guardado en modelos/zapatos/. Ya puedes cerrar esta pestaña.' : 'Error al guardar: ' + await res.text());
+    document.querySelector('h1').textContent = res.ok ? 'Listo' : 'Error al guardar';
+  } catch (e) { console.error(e); log('ERROR: ' + (e && e.message || e)); document.querySelector('h1').textContent = 'Error'; }
+})();
+</script>
+</body>
+</html>
