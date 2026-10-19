@@ -60,6 +60,10 @@ export async function getCliente(userId) {
 
 export function authErrorText(e) {
   const m = (e && e.message || '').toLowerCase();
+  const code = e && e.code || '';
+  if (code === 'email_address_invalid' || (m.includes('email address') && m.includes('invalid'))) return 'Ese correo no puede recibir mensajes. Usa un correo real.';
+  if (code === 'email_address_not_authorized') return 'Por ahora no se pueden enviar correos a esa dirección. Avisa al administrador de la tienda.';
+  if (code === 'over_email_send_rate_limit' || m.includes('email rate limit')) return 'Se enviaron demasiados correos. Espera una hora y vuelve a intentar.';
   if (m.includes('invalid login')) return 'Correo o contraseña incorrectos.';
   if (m.includes('email not confirmed')) return 'Primero confirma tu correo con el enlace que te enviamos.';
   if (m.includes('already registered') || m.includes('already been registered')) return 'Ya existe una cuenta con ese correo. Inicia sesión.';
