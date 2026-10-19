@@ -113,6 +113,30 @@ Limitaciones que muestra el propio reporte:
 
 La cámara usa un modelo de [Teachable Machine](https://teachablemachine.withgoogle.com/) que se ejecuta en el dispositivo. La cámara solo **propone** el producto: la cantidad la escribe y confirma una persona.
 
+**El modelo incluido** está en `modelos/zapatos/` y la app lo carga desde el propio sitio, sin los servidores de Google.
+
+- Reconoce las 6 clases del catálogo demo más `Fondo y otros`.
+- Se entrenó con unas 475 fotos de internet revisadas a mano.
+- Con fotos que no vio al entrenar acierta el 81 % (`modelos/zapatos/reporte.json`). Las clases escolares, que tienen pocas fotos, son las más débiles.
+
+**Reentrenar con fotos propias:** es lo que más mejora el reconocimiento de sus zapatos reales.
+
+1. Pon las fotos en una carpeta con una subcarpeta por clase. El nombre de cada subcarpeta debe ser la etiqueta exacta. Por defecto se usa `../entrenamiento-ia`.
+2. Ejecuta:
+   ```bash
+   npm run entrenar:modelo -- "<carpeta de fotos>" "<carpeta para fotos de prueba>"
+   ```
+3. Abre http://localhost:8090 en Chrome y espera a que diga «Listo».
+
+El script:
+
+- usa la misma librería que la app;
+- reserva el 20 % de cada clase para medir el acierto;
+- guarda el modelo en `modelos/zapatos/`;
+- copia a la carpeta de prueba las fotos que reconoce con más seguridad.
+
+**Alternativa en la web de Teachable Machine:**
+
 1. En Teachable Machine, crea un **proyecto de imagen** (modelo estándar).
 2. Crea una clase por zapato, con el nombre **exacto** del producto. Para el demo:
    - `Escolar Clásico`
