@@ -2,7 +2,7 @@
  * Datos PÚBLICOS de la tienda. Solo usa las vistas tienda_* y la función
  * tienda_disponibilidad(), que nunca devuelven cantidades de stock.
  * ------------------------------------------------------------------ */
-import { db, unwrap } from '../supabase.js';
+import { db, unwrap, todasLasFilas } from '../supabase.js';
 
 let cache = null;
 
@@ -11,16 +11,16 @@ export async function cargarCatalogo(force = false) {
   if (cache && !force) return cache;
   const c = db();
   const [productos, variantes, imagenes, marcas, categorias, tallas, colores, sucursales, dispo] = await Promise.all([
-    c.from('tienda_productos').select('*').order('creado_en', { ascending: false }).limit(2000),
-    c.from('tienda_variantes').select('*').limit(20000),
-    c.from('tienda_imagenes').select('*').order('orden').limit(20000),
+    todasLasFilas(() => c.from('tienda_productos').select('*').order('creado_en', { ascending: false }).order('id')),
+    todasLasFilas(() => c.from('tienda_variantes').select('*').order('id')),
+    todasLasFilas(() => c.from('tienda_imagenes').select('*').order('orden').order('id')),
     c.from('tienda_marcas').select('*').order('nombre'),
     c.from('tienda_categorias').select('*').order('orden').order('nombre'),
     c.from('tienda_tallas').select('*').order('orden').order('nombre'),
     c.from('tienda_colores').select('*').order('nombre'),
     c.from('tienda_sucursales').select('*').order('nombre'),
     c.rpc('tienda_disponibilidad'),
-  ].map(p => p.then(unwrap)));
+  ].map(p => p.then(r => (Array.isArray(r) ? r : unwrap(r)))));   // todasLasFilas ya devuelve las filas
 
   const byId = (rows) => new Map(rows.map(r => [r.id, r]));
   const estado = new Map(dispo.map(d => [d.variante_id, d.estado]));

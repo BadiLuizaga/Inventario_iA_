@@ -9,13 +9,22 @@ import { initAuth, signIn, signOut, getStaffProfile, authErrorText, ROL_TEXTO } 
 import { renderCrud, ENTIDADES } from './crud.js';
 import { renderProductos, renderProducto } from './productos.js';
 import { renderPedidos, renderPedido, renderUsuarios, renderConfiguracion } from './gestion.js';
-import { renderResumen, renderReportes } from './reportes.js';
+import { renderReportes } from './reportes.js';
+import { renderResumen } from './resumen.js';
+import { renderTablero } from './analitica/tablero.js';
+import { renderSesiones, renderSesion, renderVisitantes, renderVisitante } from './analitica/sesiones.js';
+import { renderMapas } from './analitica/mapas.js';
+import { renderEventos, renderEmbudos, renderRecorridos, renderRetencion } from './analitica/analisis.js';
+import { renderErrores, renderAjustesAnalitica } from './analitica/errores.js';
 
 const ctx = { db: 'checking', session: null, profile: null, profileError: null };
 const main = $('#main');
 const go = hash => { if (location.hash === hash) route(); else location.hash = hash; };
 
 const TITLES = { resumen: 'Resumen', productos: 'Productos', producto: 'Producto', pedidos: 'Pedidos', pedido: 'Pedido', reportes: 'Reportes', usuarios: 'Usuarios y roles', configuracion: 'Configuración' };
+const TITULOS_ANALITICA = { '': 'Analítica', sesiones: 'Sesiones y grabaciones', sesion: 'Grabación de la sesión', mapas: 'Mapas de calor', eventos: 'Eventos',
+  embudos: 'Embudos', recorridos: 'Recorridos', retencion: 'Retención', visitantes: 'Visitantes', visitante: 'Visitante', errores: 'Errores y frustración', ajustes: 'Ajustes de analítica' };
+const SUB_MENU = { sesion: 'sesiones', visitante: 'visitantes' };
 
 function loginView() {
   const msg = el('p', { class: 'msg', role: 'status' });
@@ -49,13 +58,14 @@ function blocker() {
 function route() {
   const raw = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = raw.split('?');
-  const [name = 'resumen', arg] = path.split('/');
+  const [name = 'resumen', arg, arg2] = path.split('/');
   const params = new URLSearchParams(query);
   const r = name || 'resumen';
-  $$('#sideNav a[data-r]').forEach(a => a.toggleAttribute('aria-current', a.dataset.r === r || (r === 'producto' && a.dataset.r === 'productos') || (r === 'pedido' && a.dataset.r === 'pedidos')));
+  const menu = r === 'analitica' ? (arg ? `analitica/${SUB_MENU[arg] || arg}` : 'analitica') : r;
+  $$('#sideNav a[data-r]').forEach(a => a.toggleAttribute('aria-current', a.dataset.r === menu || (r === 'producto' && a.dataset.r === 'productos') || (r === 'pedido' && a.dataset.r === 'pedidos')));
   if ($$('#sideNav a[aria-current]').length) $$('#sideNav a[aria-current]').forEach(a => a.setAttribute('aria-current', 'page'));
   $('#side').classList.remove('open'); $('#btnMenu').setAttribute('aria-expanded', 'false');
-  $('#pageTitle').textContent = ENTIDADES[r]?.titulo || TITLES[r] || 'Panel administrativo';
+  $('#pageTitle').textContent = r === 'analitica' ? (TITULOS_ANALITICA[arg || ''] || 'Analítica') : ENTIDADES[r]?.titulo || TITLES[r] || 'Panel administrativo';
   document.title = `${$('#pageTitle').textContent} · Panel`;
 
   const b = blocker();
@@ -63,7 +73,7 @@ function route() {
   main.focus({ preventScroll: true }); window.scrollTo({ top: 0 });
   if (ENTIDADES[r]) return renderCrud(main, r);
   ({
-    resumen: () => renderResumen(main),
+    resumen: () => renderResumen(main, go, params),
     productos: () => renderProductos(main, go),
     producto: () => renderProducto(main, arg, go, params.get('tab') || 'datos'),
     pedidos: () => renderPedidos(main, go, params.get('estado') || ''),
@@ -71,7 +81,14 @@ function route() {
     reportes: () => renderReportes(main, go, params),
     usuarios: () => renderUsuarios(main, ctx),
     configuracion: () => renderConfiguracion(main),
-  }[r] || (() => renderResumen(main)))();
+    analitica: () => ({
+      '': () => renderTablero(main, go, params), sesiones: () => renderSesiones(main, go, params), sesion: () => renderSesion(main, go, arg2),
+      mapas: () => renderMapas(main, go, params), eventos: () => renderEventos(main, go, params), embudos: () => renderEmbudos(main, go, params),
+      recorridos: () => renderRecorridos(main, go, params), retencion: () => renderRetencion(main, go, params),
+      visitantes: () => renderVisitantes(main, go, params), visitante: () => renderVisitante(main, go, arg2),
+      errores: () => renderErrores(main, go, params), ajustes: () => renderAjustesAnalitica(main),
+    }[arg || ''] || (() => renderTablero(main, go, params)))(),
+  }[r] || (() => renderResumen(main, go, params)))();
 }
 
 async function onSession(session) {

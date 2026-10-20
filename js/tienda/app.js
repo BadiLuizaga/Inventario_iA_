@@ -8,8 +8,9 @@ import { initSupabase, appConfig, DB_MSG } from '../supabase.js';
 import { initAuth, signIn, signUp, signOut, resetPassword, updatePassword, getCliente, getStaffProfile, authErrorText, ROL_TEXTO } from '../auth.js';
 import { cargarCatalogo, invalidarCatalogo, imagenUrl, idsCategoria, crearPedido, misPedidos, cancelarMiPedido, actualizarCliente, ESTADO_PEDIDO } from '../services/tienda.js';
 import { cartItems, cartCount, onCartChange, addToCart, setQty, removeFromCart, clearCart, MAX_POR_LINEA } from './cart.js';
+import { iniciarAnalitica, registrarEvento, consentimiento, guardarConsentimiento, configAnalitica, analiticaDesactivada } from '../analitica/tracker.js';
 
-const ctx = { db: 'checking', session: null, cliente: null, recovery: false };
+const ctx = { db: 'checking', session: null, cliente: null, staff: null, recovery: false };
 const main = $('#main');
 const money = v => fmtMoney(v, true);
 
@@ -205,6 +206,7 @@ function renderProduct(id) {
     const p = cat.productos.find(x => x.id === id);
     if (!p) { show(emptyState({ icon: 'search', title: 'Producto no disponible', text: 'Este producto no existe o ya no está publicado.', action: { label: 'Ver catálogo', onClick: () => { location.hash = '#/catalogo'; } } })); return; }
     document.title = `${p.nombre} · ${appConfig().TIENDA_NOMBRE || 'Tienda'}`;
+    registrarEvento('producto_visto', { id: p.id, producto: p.nombre });
 
     const colores = [...new Map(p.variantes.map(v => [v.color_id || '', v.color])).entries()];
     let selColor = colores.length ? colores[0][0] : '';
@@ -267,6 +269,7 @@ function renderProduct(id) {
       step(0);
       try {
         addToCart(selVar.id, qty);
+        registrarEvento('carrito_agregado', { id: p.id, producto: p.nombre, talla: selVar.talla?.nombre || null, cantidad: qty });
         snack('Agregado al carrito');
         setMsg(msg, '');
       } catch (e) { setMsg(msg, e.message, 'err'); }
@@ -408,6 +411,7 @@ function renderCheckout() {
           lineas: cartItems().map(i => ({ variante_id: i.v, cantidad: i.n })), entrega,
           sucursalId: entrega === 'retiro' ? sucSel.value : null, direccion: dir, telefono: tel, notas: $('#coNotas').value.trim(),
         });
+        registrarEvento('pedido_realizado', { pedido: id, unidades: cartItems().reduce((n, i) => n + i.n, 0), entrega });
         clearCart(); invalidarCatalogo();
         location.hash = `#/pedido-ok/${id}`;
       } catch (err) {
@@ -502,9 +506,10 @@ function renderAccount() {
       if (mode === 'registro' && !nombre.value.trim()) { setMsg(msg, 'Escribe tu nombre.', 'err'); return; }
       btn.disabled = true; setMsg(msg, 'Un momento…');
       try {
-        if (mode === 'login') { await signIn(em, pw); snack('Sesión iniciada'); }
+        if (mode === 'login') { await signIn(em, pw); registrarEvento('inicio_sesion'); snack('Sesión iniciada'); }
         else if (mode === 'registro') {
           const needsConfirm = await signUp(em, pw, nombre.value.trim());
+          registrarEvento('registro');
           if (needsConfirm) { setMsg(msg, 'Cuenta creada. Revisa tu correo y confirma tu dirección para ingresar.', 'ok'); btn.disabled = false; return; }
           snack('Cuenta creada');
         } else { await resetPassword(em); setMsg(msg, 'Si el correo está registrado, recibirás un enlace para crear una nueva contraseña.', 'ok'); btn.disabled = false; return; }
@@ -594,6 +599,9 @@ function route() {
   const params = new URLSearchParams(query);
   document.title = appConfig().TIENDA_NOMBRE || 'Tienda de calzado';
   $('#catNav').classList.remove('open'); $('#btnMenu').setAttribute('aria-expanded', 'false');
+  // Grabación: el texto de estas vistas (nombre, teléfono, dirección, pedidos) se enmascara
+  main.classList.toggle('an-enmascarar', ['cuenta', 'pedidos', 'checkout', 'pedido-ok'].includes(name));
+  if (name === 'checkout') registrarEvento('checkout_iniciado', { lineas: cartItems().length });
   ({
     '': renderHome, catalogo: () => renderCatalog(params), producto: () => renderProduct(arg),
     carrito: renderCart, checkout: renderCheckout, 'pedido-ok': () => renderSuccess(arg),
@@ -603,12 +611,19 @@ function route() {
 
 function updateHeader() {
   $('#accountLabel').textContent = ctx.session ? (ctx.cliente?.nombre?.split(' ')[0] || 'Mi cuenta') : 'Ingresar';
+  // «Acceso personal» solo para admin y almacenero activos (almacen.html vuelve a validar el rol)
+  const esPersonal = !!ctx.staff?.activo && ['admin', 'operador'].includes(ctx.staff.rol);
+  $$('[data-staff]').forEach(n => { n.hidden = !esPersonal; });
 }
 
 async function onSession(session, event) {
-  ctx.session = session; ctx.cliente = null;
+  ctx.session = session; ctx.cliente = null; ctx.staff = null;
   if (event === 'PASSWORD_RECOVERY') { ctx.recovery = true; location.hash = '#/cuenta'; }
-  if (session) { try { ctx.cliente = await getCliente(session.user.id); } catch (e) { console.error(e); } }
+  if (session) {
+    const [cliente, staff] = await Promise.allSettled([getCliente(session.user.id), getStaffProfile(session.user.id)]);
+    if (cliente.status === 'fulfilled') ctx.cliente = cliente.value; else console.error(cliente.reason);
+    if (staff.status === 'fulfilled') ctx.staff = staff.value;
+  }
   updateHeader();
   const next = session && sessionStorage.getItem('tienda:despues');
   if (next) { sessionStorage.removeItem('tienda:despues'); location.hash = next; return; }
@@ -616,7 +631,7 @@ async function onSession(session, event) {
 }
 
 async function init() {
-  $('#frmSearch').addEventListener('submit', e => { e.preventDefault(); const q = $('#q').value.trim(); location.hash = '#/catalogo' + (q ? '?q=' + encodeURIComponent(q) : ''); });
+  $('#frmSearch').addEventListener('submit', e => { e.preventDefault(); const q = $('#q').value.trim(); if (q) registrarEvento('busqueda', { q: q.slice(0, 80) }); location.hash = '#/catalogo' + (q ? '?q=' + encodeURIComponent(q) : ''); });
   $('#btnMenu').addEventListener('click', e => { const o = $('#catNav').classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', String(o)); });
   onCartChange(() => { const n = cartCount(); $('#cartCount').textContent = String(n); $('#cartCount').hidden = !n; });
   window.addEventListener('hashchange', route);
@@ -630,6 +645,29 @@ async function init() {
   $('#footerCopy').textContent = `© ${new Date().getFullYear()} ${nombre}`;
   if (client) cargarCatalogo().then(buildCategoryNav).catch(() => {});
   initAuth(client, onSession);   // emite la sesión inicial (o null sin base) y llama a route()
+  if (client) prepararAnalitica();
+}
+
+/* ---------- consentimiento de analítica ---------- */
+async function prepararAnalitica() {
+  if (analiticaDesactivada()) return;
+  const cfg = await configAnalitica();
+  if (!cfg.activa) return;
+  $('#btnPrivacidad').hidden = false;
+  $('#btnPrivacidad').addEventListener('click', avisoAnalitica);
+  if (consentimiento() === 'si') iniciarAnalitica();
+  else if (consentimiento() === null) avisoAnalitica();
+}
+function avisoAnalitica() {
+  $('#avisoAnalitica')?.remove();
+  const elegir = v => { guardarConsentimiento(v); aviso.remove(); snack(v === 'si' ? 'Gracias: nos ayudas a mejorar la tienda' : 'Listo: no medimos tu visita'); };
+  const aviso = el('div', { id: 'avisoAnalitica', class: 'consent', role: 'dialog', 'aria-label': 'Privacidad y analítica' },
+    el('p', {}, el('strong', { text: '¿Nos ayudas a mejorar la tienda? ' }),
+      'Con tu permiso registramos cómo navegas: páginas, clics y una grabación de la pantalla con los formularios y tus datos ocultos. No guardamos contraseñas ni datos de pago. Puedes cambiar de opinión desde «Privacidad y analítica», al pie de la página.'),
+    el('div', { class: 'row' },
+      el('button', { class: 'btn ghost small', type: 'button', text: 'Rechazar', onclick: () => elegir('no') }),
+      el('button', { class: 'btn primary small', type: 'button', text: 'Aceptar', onclick: () => elegir('si') })));
+  document.body.append(aviso);
 }
 
 init();

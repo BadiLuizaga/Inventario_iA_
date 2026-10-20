@@ -9,7 +9,7 @@ import { DEFAULT_MODEL, isLegacy, normalizeUrl } from '../classifier/model.js';
 import { initScanner, loadModel, startCamera, stopCamera, resetEngine, setMirror, scannerState } from '../classifier/scanner.js';
 import { initSupabase, db } from '../supabase.js';
 import { initAuth, signIn, signOut, getStaffProfile, authErrorText, ROL_TEXTO } from '../auth.js';
-import { productoPorEtiqueta, variantesDe, existencias, maestros, nombreAlmacen, nombreVariante } from '../services/interno.js';
+import { productoPorEtiqueta, variantesDe, existencias, maestros, nombreAlmacen, nombreVariante, registrarEscaneo, resolverEscaneo } from '../services/interno.js';
 import { accessBlocker, renderStock, renderMove, renderCount, renderHistory } from './views.js';
 import { createPicker } from './picker.js';
 
@@ -32,18 +32,45 @@ function setTab(t) {
   ctx.tab = t; document.body.dataset.tab = t;
   $$('.tabbar button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
   $$('[data-screen]').forEach(s => { s.hidden = s.dataset.screen !== t; });
-  if (t !== 'scan') resetEngine();
+  if (t !== 'scan') { resetEngine(); cerrarEscaneo('descartado'); }
   if (t !== 'scan' && scannerState.running) stopCamera(false);   // la cámara no queda encendida en segundo plano
   window.scrollTo({ top: 0 });
   refresh();
 }
 
+/* ---------- registro de escaneos (métricas de la IA) ---------- *
+ * Cada propuesta de la cámara queda «pendiente» hasta que la persona la
+ * confirma, la corrige eligiendo otro producto o la descarta. El registro
+ * es secundario: si falla (p. ej. sin la migración 0004), la app sigue. */
+let escaneo = null;   // { id: Promise<uuid|null>, corrigiendo: boolean }
+function abrirEscaneo(label, info) {
+  cerrarEscaneo('descartado');   // la propuesta anterior quedó sin respuesta
+  const id = registrarEscaneo({
+    modelo: info.modelo || 'desconocido', clase: label, confianza: info.conf,
+    alternativa: info.second, confianzaAlternativa: info.second ? info.secondConf : null,
+    dudoso: info.motivos.length > 0, motivo: info.motivos.join('; ') || null, almacenId: ctx.almacen?.id || null,
+  }).catch(e => { console.warn('No se pudo registrar el escaneo', e); return null; });
+  escaneo = { id, corrigiendo: false };
+}
+function cerrarEscaneo(resultado, productoId = null) {
+  const s = escaneo; escaneo = null;
+  if (s) s.id.then(id => id && resolverEscaneo(id, resultado, productoId)).catch(e => console.warn('No se pudo registrar el resultado del escaneo', e));
+}
+const pct = v => `${Math.round(v * 100)} %`;
+// «Es otro producto»: el escaneo sigue pendiente y se guarda como corrección al elegir en el buscador
+const botonOtro = () => el('button', { class: 'btn small', type: 'button', text: 'No, es otro producto', onclick: () => {
+  if (escaneo) escaneo.corrigiendo = true;
+  detectSeq++;
+  $('#detBody').replaceChildren(el('p', { class: 'msg', text: 'Busca el producto correcto abajo: quedará registrado como corrección de la cámara.' }));
+  const box = $('#manualPick'); box.scrollIntoView({ behavior: 'smooth', block: 'center' }); box.querySelector('input')?.focus({ preventScroll: true });
+} });
+
 /* ---------- escáner → producto real ---------- */
 let detectSeq = 0;
-async function showProductDetail(producto, origen, label = '') {
+async function showProductDetail(producto, origen, label = '', lectura = null) {
   const seq = ++detectSeq;
   const body = $('#detBody');
-  $('#detected').hidden = false;
+  $('#detected').hidden = false; $('#detected').classList.remove('doubt');
   $('#detLabel').textContent = producto ? producto.nombre : label;
   body.replaceChildren(el('p', { class: 'msg', text: 'Consultando existencias…' }));
   try {
@@ -53,15 +80,23 @@ async function showProductDetail(producto, origen, label = '') {
     const byVar = new Map(stock.map(s => [s.variante_id, s]));
     const total = stock.reduce((s, r) => s + r.cantidad, 0);
     const canWrite = ['admin', 'operador'].includes(ctx.profile.rol);
+    const pregunta = origen === 'camara' && escaneo ? el('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;margin:8px 0' },
+      el('span', { class: 'msg', text: '¿Es el producto correcto?' }),
+      el('button', { class: 'btn small primary', type: 'button', text: 'Sí, es correcto', onclick: () => {
+        cerrarEscaneo('confirmado', producto.id); pregunta.replaceWith(el('p', { class: 'msg ok', text: '✓ Confirmado' }));
+      } }),
+      botonOtro()) : null;
     body.replaceChildren(
       el('p', { class: 'muted', text: [producto.modelo && `Modelo ${producto.modelo}`, producto.marcas?.nombre, producto.estado !== 'activo' ? 'Producto inactivo' : '', `${total} u. en ${nombreAlmacen(ctx.almacen)}`].filter(Boolean).join(' · ') }),
+      lectura, pregunta,
       origen === 'camara' ? el('p', { class: 'msg', text: 'Confirma que es el producto correcto antes de registrar cualquier movimiento.' }) : null,
       vars.length
         ? el('div', { class: 'var-grid', style: 'margin-top:8px' }, ...vars.map(v => {
           const s = byVar.get(v.id);
           return el('button', { type: 'button', class: 'var-btn' + (v.activo ? '' : ' off'), disabled: !canWrite,
             title: canWrite ? 'Registrar un movimiento de esta variante' : 'Solo consulta',
-            onclick: () => { movePrefill = { producto, variante: v, stock: s || null, origen }; setTab('move'); } },
+            // Elegir una variante del producto propuesto equivale a confirmarlo
+            onclick: () => { if (origen === 'camara') cerrarEscaneo('confirmado', producto.id); movePrefill = { producto, variante: v, stock: s || null, origen }; setTab('move'); } },
           el('span', { text: nombreVariante(v) }), el('small', { text: `${s ? s.cantidad : 0} u.${s?.ubicacion ? ' · ' + s.ubicacion : ''}` }));
         }))
         : el('p', { class: 'notice', text: 'Este producto no tiene variantes (talla/color) registradas. Un administrador debe crearlas.' }),
@@ -72,23 +107,39 @@ async function showProductDetail(producto, origen, label = '') {
   }
 }
 
-async function onDetect(label) {
+async function onDetect(label, info) {
   const seq = ++detectSeq;
-  $('#detected').hidden = false;
+  $('#detected').hidden = false; $('#detected').classList.remove('doubt');
   $('#detLabel').textContent = label;
   const body = $('#detBody');
   if (accessBlocker(ctx, openLogin)) { body.replaceChildren(el('p', { text: 'Inicia sesión con una cuenta de personal y elige un almacén para ver el producto vinculado a esta etiqueta.' })); return; }
+  abrirEscaneo(label, info);
   body.replaceChildren(el('p', { class: 'msg', text: 'Buscando en el catálogo…' }));
   try {
     const p = await productoPorEtiqueta(label);
     if (seq !== detectSeq) return;
+    const lectura = el('p', { class: 'muted', text: `Confianza ${pct(info.conf)}${info.second ? ` · después: «${info.second}» ${pct(info.secondConf)}` : ''}` });
     if (!p) {
       body.replaceChildren(
         el('p', { text: `La etiqueta «${label}» no está vinculada a ningún producto registrado.` }),
-        el('p', { class: 'muted', text: 'Búscalo manualmente abajo, o pide a un administrador que registre el producto y le asigne esta etiqueta.' }));
+        el('p', { class: 'muted', text: 'Búscalo manualmente abajo, o pide a un administrador que registre el producto y le asigne esta etiqueta.' }),
+        botonOtro());
       return;
     }
-    showProductDetail(p, 'camara', label);
+    // Propuesta dudosa: no se muestran variantes hasta que la persona elige el producto
+    if (info.motivos.length) {
+      const alt = info.second ? await productoPorEtiqueta(info.second).catch(() => null) : null;
+      if (seq !== detectSeq) return;
+      $('#detected').classList.add('doubt');
+      body.replaceChildren(
+        el('p', { class: 'notice', text: `Revisa antes de seguir: ${info.motivos.join(', ')}.` }), lectura,
+        el('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap;margin-top:8px' },
+          el('button', { class: 'btn small primary', type: 'button', text: `Sí, es ${p.nombre}`, onclick: () => { cerrarEscaneo('confirmado', p.id); showProductDetail(p, 'camara'); } }),
+          alt && alt.id !== p.id ? el('button', { class: 'btn small', type: 'button', text: `Es ${alt.nombre}`, onclick: () => { cerrarEscaneo('corregido', alt.id); showProductDetail(alt, 'camara'); } }) : null,
+          botonOtro()));
+      return;
+    }
+    showProductDetail(p, 'camara', label, lectura);
   } catch (e) {
     console.error(e);
     if (seq === detectSeq) body.replaceChildren(el('p', { class: 'msg err', text: errText(e) }));
@@ -100,6 +151,8 @@ function mountManualPicker() {
   const blocked = accessBlocker(ctx, openLogin);
   if (blocked) { box.replaceChildren(el('p', { class: 'msg', text: `No disponible todavía: ${blocked.querySelector('strong')?.textContent || ''}.` })); return; }
   const picker = createPicker({ almacenId: () => ctx.almacen?.id, onSelect: (p, v, s) => {
+    // Tras «No, es otro producto» la elección es la corrección; sin esa respuesta, la propuesta queda descartada
+    if (escaneo) cerrarEscaneo(escaneo.corrigiendo ? 'corregido' : 'descartado', escaneo.corrigiendo ? p.id : null);
     if (['admin', 'operador'].includes(ctx.profile.rol)) { movePrefill = { producto: p, variante: v, stock: s, origen: 'manual' }; setTab('move'); }
     else showProductDetail(p, 'manual');
   } });
@@ -233,7 +286,7 @@ async function init() {
   $$('.tabbar button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
   $$('[data-refresh]').forEach(b => b.addEventListener('click', refresh));
   $$('dialog [data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
-  $('#btnDetClose').addEventListener('click', () => { detectSeq++; $('#detected').hidden = true; });
+  $('#btnDetClose').addEventListener('click', () => { detectSeq++; cerrarEscaneo('descartado'); $('#detected').hidden = true; });
   $('#btnAccount').addEventListener('click', openLogin);
   $('#btnWarehouse').addEventListener('click', openWarehouse);
 

@@ -8,6 +8,10 @@ js/config.js
 supabase/.temp/
 supabase/.branches/
 
+# Fotos para entrenar la cámara y respaldos locales del modelo (el modelo vigente sí se versiona)
+entrenamiento-ia/
+modelos-respaldo/
+
 # Sistema / editores
 .DS_Store
 Thumbs.db

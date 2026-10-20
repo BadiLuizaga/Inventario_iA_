@@ -4,12 +4,12 @@
  * detección solo se avisa con `onDetect(label)`; el stock no se toca.
  * ------------------------------------------------------------------ */
 import { $, el, retrigger, unlockAudio, beep, buzz } from '../ui.js';
-import { CountEngine, BG_RE } from './engine.js';
-import { DEFAULT_MODEL, normalizeUrl, loadTMModel } from './model.js';
+import { CountEngine, BG_RE, motivosDuda } from './engine.js';
+import { DEFAULT_MODEL, normalizeUrl, loadTMModel, clasesDebiles } from './model.js';
 import { prefs, savePrefs } from '../prefs.js';
 
 const S = {
-  model: null, labels: [], url: '',
+  model: null, labels: [], url: '', modelName: '', weak: new Set(),
   mirror: false, paused: false, stream: null, running: false, busy: false, lastPred: 0, raf: 0, wake: null,
   lastStatus: null, disp: null, dispAt: 0, dispDraw: 0,
 };
@@ -81,7 +81,7 @@ function onPreds(preds, now) {
     const pop = $('#pop'); pop.className = 'pop'; pop.textContent = r.counted; retrigger(pop, 'show');
     retrigger($('#flash'), 'on');
     beep(prefs.cfg.sound, 880); buzz(prefs.cfg.vibrate, 50);
-    hooks.onDetect(r.counted);
+    hooks.onDetect(r.counted, { ...r.detail, motivos: motivosDuda(r.detail, S.weak), modelo: S.modelName });
   }
 }
 
@@ -203,6 +203,8 @@ export async function loadModel(rawUrl) {
     const m = await loadTMModel(base);
     try { if (S.model && S.model.dispose) S.model.dispose(); } catch (_) { /* el modelo viejo ya estaba liberado */ }
     S.model = m; S.url = base;
+    S.modelName = (m.getMetadata && m.getMetadata().modelName) || base;
+    S.weak = await clasesDebiles(base);
     setLabels(m.getClassLabels());
     showStart({ text: 'Todo listo', hint: READY_HINT, button: 'Activar cámara', onClick: startCamera });
     hooks.onModelStatus({ state: 'ready', labels: products(), custom: base !== DEFAULT_MODEL });

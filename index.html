@@ -22,7 +22,7 @@
     <nav class="topbar-links" aria-label="Enlaces de ayuda">
       <a href="#/sucursales">Sucursales</a>
       <a href="#/pedidos">Mis pedidos</a>
-      <a href="almacen.html">Acceso personal</a>
+      <a href="almacen.html" data-staff hidden>Acceso personal</a>
     </nav>
   </div>
 </div>
@@ -44,7 +44,7 @@
     <div class="header-actions">
       <a class="hdr-btn" href="#/cuenta" id="lnkAccount">
         <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-        <span id="accountLabel">Ingresar</span>
+        <span id="accountLabel" class="an-enmascarar">Ingresar</span>
       </a>
       <a class="hdr-btn cart-btn" href="#/carrito" aria-label="Carrito">
         <svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 7H6"/></svg>
@@ -74,10 +74,10 @@
     </div>
     <div>
       <h4>Información</h4>
-      <ul><li><a href="#/sucursales">Sucursales</a></li><li><a href="#/cuenta">Mi cuenta</a></li><li><a href="almacen.html">Acceso personal</a></li></ul>
+      <ul><li><a href="#/sucursales">Sucursales</a></li><li><a href="#/cuenta">Mi cuenta</a></li><li data-staff hidden><a href="almacen.html">Acceso personal</a></li></ul>
     </div>
   </div>
-  <div class="wrap footer-bottom"><span id="footerCopy"></span></div>
+  <div class="wrap footer-bottom"><span id="footerCopy"></span><button type="button" class="link-btn" id="btnPrivacidad" hidden>Privacidad y analítica</button></div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

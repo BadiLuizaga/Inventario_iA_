@@ -6,7 +6,7 @@
  * ------------------------------------------------------------------ */
 import { el, emptyState } from '../ui.js';
 import { mercadoComercio } from '../services/interno.js';
-import { dataTable, downloadCsv } from './util.js';
+import { dataTable, downloadCsv, barras, leyenda, tarjeta } from './util.js';
 
 const FLUJO = { importacion: 'Importación', exportacion: 'Exportación' };
 // Nombres cortos de las partidas del Excel (si llega otra, se usa su nombre completo)
@@ -31,20 +31,7 @@ function agrupar(rows, key) {
   return m;
 }
 
-/** Barras horizontales (mismo estilo que «Actividad por usuario»). series: [{ label, fill?: 'alt', value }] */
-function barras(filas, max) {
-  return el('div', { class: 'bars' }, ...filas.map(f => el('div', { class: 'bar-row' },
-    el('span', { text: f.label }),
-    el('div', { class: 'bar-pair' }, ...f.series.map(s => {
-      const fill = el('div', { class: 'bar-fill' + (s.fill ? ' ' + s.fill : ''), title: s.title || '' });
-      fill.style.width = `${max > 0 ? (s.value / max) * 100 : 0}%`;
-      return el('div', { class: 'bar-track' }, fill);
-    })),
-    el('strong', { text: f.text }))));
-}
-const leyenda = () => el('div', { class: 'legend' },
-  el('span', {}, el('i', {}), FLUJO.importacion), el('span', {}, el('i', { class: 'alt' }), FLUJO.exportacion));
-const tarjeta = (titulo, sub, ...hijos) => el('div', { class: 'card stack' }, el('h3', { text: titulo }), sub ? el('p', { class: 'muted', text: sub }) : null, ...hijos);
+const leyendaFlujo = () => leyenda([FLUJO.importacion], [FLUJO.exportacion, 'alt']);
 
 export async function renderMercado(out, params, nav) {
   const todas = await mercadoComercio();
@@ -125,9 +112,9 @@ export async function renderMercado(out, params, nav) {
       kpi('Pares importados (M)', nf(porFlujo.importacion.pares / 1e6)), kpi('Pares exportados (M)', nf(porFlujo.exportacion.pares / 1e6)),
       kpi('Valor por par importado (USD)', nf(porPar(porFlujo.importacion.valor, porFlujo.importacion.pares) ?? 0, 2)),
       kpi('Valor por par exportado (USD)', nf(porPar(porFlujo.exportacion.valor, porFlujo.exportacion.pares) ?? 0, 2))),
-    tarjeta('Importación frente a exportación por año', 'Valor comercial en millones de USD (importación / exportación).', leyenda(), gAnio),
+    tarjeta('Importación frente a exportación por año', 'Valor comercial en millones de USD (importación / exportación).', leyendaFlujo(), gAnio),
     tarjeta('Principales socios comerciales', `Top ${top.length} de ${socios.length} países por valor. Pasa el cursor por una barra para ver pares y valor por par.`, toggle, gSocios),
-    tarjeta('Valor por par por categoría y flujo', 'Promedio ponderado: valor total ÷ pares totales.', leyenda(), gVpp),
+    tarjeta('Valor por par por categoría y flujo', 'Promedio ponderado: valor total ÷ pares totales.', leyendaFlujo(), gVpp),
     tarjeta('Valor frente a cantidad', 'Si una categoría pesa más en el valor que en los pares, sus pares cuestan más que el promedio de su flujo.', dataTable(colsVc, vc)),
     tarjeta('Limitaciones de los datos', null, el('ul', { class: 'muted' },
       el('li', { text: `País reportante: ${paises}. No son datos de Bolivia ni ventas de Manaco: sirven como referencia externa del mercado.` }),

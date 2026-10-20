@@ -20,6 +20,13 @@
   const MAX_ENTRENO = 90;            // fotos originales por clase, para no desequilibrar
   const PARAMS = { denseUnits: 100, epochs: 50, learningRate: 0.001, batchSize: 16 };   // valores de Teachable Machine
   const UMBRAL_PRUEBA = 0.85, FOTOS_PRUEBA = 6;
+  const PRUEBA = 0.2;                // fracción de cada clase reservada para medir (por grupos, ver abajo)
+  const CASI_IGUAL = 10;             // distancia máxima (de 64 bits) para considerar dos fotos casi idénticas
+  const FOTOS_RECOMENDADAS = 60;     // por debajo, la clase se marca como «necesita más fotos»
+  // Misma regla de duda que la app (js/classifier/engine.js, DUDA): aquí sin la estabilidad, que solo existe en vídeo
+  const DUDA = { confianza: 0.90, margen: 0.30 };
+  // Aumentos: las clases con menos fotos reciben más variantes para que todas pesen parecido al entrenar
+  const AUMENTOS = [{}, { espejo: true }, { zoom: 0.85 }, { zoom: 0.85, espejo: true }, { zoom: 0.7 }, { zoom: 0.7, espejo: true }];
 
   const $log = document.getElementById('log');
   const log = t => { $log.textContent += t + '\n'; $log.scrollTop = $log.scrollHeight; fetch('/progreso', { method: 'POST', body: t }).catch(() => {}); };
@@ -34,49 +41,112 @@
     g.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 224, 224);
     return c;
   }
+  // Huella perceptual (dHash de 64 bits): fotos casi iguales (recortes, otra resolución, la misma foto repetida) dan huellas cercanas
+  function huella(img) {
+    const c = document.createElement('canvas'); c.width = 9; c.height = 8;
+    const g = c.getContext('2d'); g.drawImage(lienzo(img), 0, 0, 9, 8);
+    const d = g.getImageData(0, 0, 9, 8).data, gris = i => d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114, bits = [];
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) { const i = (y * 9 + x) * 4; bits.push(gris(i) > gris(i + 4) ? 1 : 0); }
+    return bits;
+  }
+  const distancia = (a, b) => a.reduce((n, v, i) => n + (v !== b[i]), 0);
+  // Orden pseudoaleatorio pero reproducible (mismo resultado en cada corrida con las mismas fotos)
+  const hashTexto = t => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
 
   try {
     const { clases } = await (await fetch('/lista')).json();
     const etiquetas = clases.map(c => c.nombre);
     log(`Clases: ${etiquetas.join(' · ')}`);
+
+    // 1. Huellas y grupos de fotos casi idénticas
+    log('Buscando fotos casi idénticas…');
+    const huellas = [];
+    for (const c of clases) for (const f of c.fotos) {
+      try { huellas.push({ clase: c.nombre, archivo: f, h: huella(await cargar(url(c.nombre, f))) }); }
+      catch (_) { log(`  (no se pudo leer ${c.nombre}/${f})`); }
+    }
+    const padre = huellas.map((_, i) => i);
+    const raiz = i => (padre[i] === i ? i : (padre[i] = raiz(padre[i])));
+    const entreClases = [];
+    for (let i = 0; i < huellas.length; i++) for (let j = i + 1; j < huellas.length; j++) {
+      if (distancia(huellas[i].h, huellas[j].h) > CASI_IGUAL) continue;
+      if (huellas[i].clase === huellas[j].clase) padre[raiz(i)] = raiz(j);
+      else entreClases.push(`${huellas[i].clase}/${huellas[i].archivo} ≈ ${huellas[j].clase}/${huellas[j].archivo}`);
+    }
+    if (entreClases.length) { log(`  ATENCIÓN: ${entreClases.length} fotos casi iguales en clases distintas (revisa si están mal clasificadas):`); entreClases.slice(0, 20).forEach(t => log('    ' + t)); }
+
+    // 2. Separación por GRUPOS: una foto y sus casi-copias van todas a entrenamiento o todas a prueba
     const modelo = await tmImage.createTeachable(
       { tfjsVersion: tf.version.tfjs, tmVersion: '2.4.18', packageVersion: tmImage.version, packageName: '@teachablemachine/image', modelName: 'zapatos-manaco-demo' },
       { version: 2, alpha: 0.35 });
     modelo.setLabels(etiquetas);
     modelo.setSeed('manaco');
 
-    const prueba = [];
+    const prueba = [], resumenClases = [];
+    const entrenoPorClase = clases.map(c => {
+      const mias = huellas.map((x, i) => ({ ...x, g: raiz(i) })).filter(x => x.clase === c.nombre);
+      const grupos = [...mias.reduce((m, x) => m.set(x.g, [...(m.get(x.g) || []), x.archivo]), new Map()).values()]
+        .sort((a, b) => hashTexto('manaco' + a[0]) - hashTexto('manaco' + b[0]));
+      const meta = Math.max(1, Math.round(mias.length * PRUEBA)), tope = Math.ceil(mias.length * (PRUEBA + 0.05));
+      const pruebaClase = [], entreno = [];
+      for (const g of grupos) {
+        // Un grupo enorme (media clase de casi-copias) no se aparta: dejaría la clase sin fotos para entrenar
+        const cabe = pruebaClase.length < meta && (pruebaClase.length + g.length <= tope || !pruebaClase.length) && g.length < mias.length / 2;
+        (cabe ? pruebaClase : entreno).push(...g);
+      }
+      prueba.push(...pruebaClase.map(f => ({ clase: c.nombre, archivo: f })));
+      resumenClases.push({ clase: c.nombre, fotos: mias.length, grupos: grupos.length, casiCopias: mias.length - grupos.length, entreno: Math.min(entreno.length, MAX_ENTRENO), prueba: pruebaClase.length });
+      return entreno.slice(0, MAX_ENTRENO);
+    });
+
+    // 3. Entrenamiento con aumentos equilibrados (las clases escolares tienen pocas fotos)
+    const objetivo = Math.max(...entrenoPorClase.map(e => e.length)) * 2;
     for (const [i, c] of clases.entries()) {
-      const pruebaClase = c.fotos.filter((_, k) => k % 5 === 2);              // 20 % reservado, nunca se entrena
-      const entreno = c.fotos.filter((_, k) => k % 5 !== 2).slice(0, MAX_ENTRENO);
-      const variantes = [{}, { espejo: true }, ...(entreno.length < 40 ? [{ zoom: 0.8 }, { zoom: 0.8, espejo: true }] : [])];
+      const entreno = entrenoPorClase[i];
+      const variantes = AUMENTOS.slice(0, Math.min(AUMENTOS.length, Math.max(2, Math.ceil(objetivo / Math.max(1, entreno.length)))));
       for (const f of entreno) {
         try { const img = await cargar(url(c.nombre, f)); for (const v of variantes) await modelo.addExample(i, lienzo(img, v)); }
         catch (e) { log(`  (no se pudo leer ${c.nombre}/${f})`); }
       }
-      prueba.push(...pruebaClase.map(f => ({ clase: c.nombre, archivo: f })));
-      log(`${c.nombre}: ${entreno.length} fotos × ${variantes.length} variantes para entrenar, ${pruebaClase.length} reservadas`);
+      const r = resumenClases[i]; r.variantes = variantes.length;
+      log(`${c.nombre}: ${r.fotos} fotos en ${r.grupos} grupos (${r.casiCopias} casi-copias) → ${entreno.length} × ${variantes.length} variantes para entrenar, ${r.prueba} reservadas${r.fotos < FOTOS_RECOMENDADAS ? `  ⚠ pocas fotos: conviene ${FOTOS_RECOMENDADAS}–100` : ''}`);
     }
 
     log('Entrenando…');
-    await modelo.train(PARAMS, { onEpochEnd: async (e, l) => { if ((e + 1) % 5 === 0) log(`  época ${e + 1}/${PARAMS.epochs} · acierto ${(l.acc * 100).toFixed(1)} % · validación ${(l.val_acc * 100).toFixed(1)} %`); } });
+    await modelo.train(PARAMS, { onEpochEnd: async (e, l) => { if ((e + 1) % 5 === 0) log(`  época ${e + 1}/${PARAMS.epochs} · acierto ${(l.acc * 100).toFixed(1)} % · validación interna ${(l.val_acc * 100).toFixed(1)} %`); } });
+    log('  (la «validación interna» de Teachable Machine mezcla variantes de las mismas fotos: la medida real es la de abajo)');
 
+    // 4. Evaluación con las fotos reservadas (nunca vistas, ni sus casi-copias)
     log('Midiendo con las fotos reservadas…');
     const resultados = [];
     for (const p of prueba) {
       try {
-        const r = await modelo.predict(lienzo(await cargar(url(p.clase, p.archivo))));
-        const top = r.reduce((a, b) => (b.probability > a.probability ? b : a));
-        resultados.push({ ...p, prediccion: top.className, probabilidad: top.probability, correcta: top.className === p.clase });
+        const r = (await modelo.predict(lienzo(await cargar(url(p.clase, p.archivo))))).sort((a, b) => b.probability - a.probability);
+        const [top, seg] = r;
+        const dudosa = top.probability < DUDA.confianza || (seg && top.probability - seg.probability < DUDA.margen);
+        resultados.push({ ...p, prediccion: top.className, probabilidad: top.probability, segunda: seg?.className ?? null, correcta: top.className === p.clase, dudosa });
       } catch (_) {}
     }
-    const porClase = etiquetas.map(c => { const rs = resultados.filter(r => r.clase === c); return { clase: c, aciertos: rs.filter(r => r.correcta).length, total: rs.length }; });
+    const porClase = etiquetas.map(c => {
+      const rs = resultados.filter(r => r.clase === c), predichas = resultados.filter(r => r.prediccion === c);
+      const aciertos = rs.filter(r => r.correcta).length;
+      return { clase: c, aciertos, total: rs.length, precision: predichas.length ? aciertos / predichas.length : null };
+    });
+    const confusion = Object.fromEntries(etiquetas.map(c => [c, Object.fromEntries(etiquetas.map(p => [p, resultados.filter(r => r.clase === c && r.prediccion === p).length]))]));
     const aciertos = resultados.filter(r => r.correcta).length;
+    const malos = resultados.filter(r => !r.correcta), buenos = resultados.filter(r => r.correcta);
+    const politicaDuda = {
+      regla: `confianza < ${DUDA.confianza} o margen con la 2.ª clase < ${DUDA.margen}`,
+      erroresConAviso: malos.filter(r => r.dudosa).length, errores: malos.length,
+      aciertosConAviso: buenos.filter(r => r.dudosa).length, aciertos: buenos.length,
+      erroresSegurosSinAviso: malos.filter(r => !r.dudosa).map(r => `${r.clase}/${r.archivo} → ${r.prediccion} (${(r.probabilidad * 100).toFixed(0)} %)`),
+    };
     const fotosPrueba = etiquetas.flatMap(c => resultados.filter(r => r.clase === c && r.correcta && r.probabilidad >= UMBRAL_PRUEBA)
       .sort((a, b) => b.probabilidad - a.probabilidad).slice(0, FOTOS_PRUEBA));
-    const errores = resultados.filter(r => !r.correcta).map(r => `${r.clase}/${r.archivo} → ${r.prediccion} (${(r.probabilidad * 100).toFixed(0)} %)`);
-    for (const c of porClase) log(`  ${c.clase}: ${c.aciertos}/${c.total}`);
-    log(`Acierto total con fotos no vistas: ${(aciertos / resultados.length * 100).toFixed(1)} %`);
+    const errores = malos.map(r => `${r.clase}/${r.archivo} → ${r.prediccion} (${(r.probabilidad * 100).toFixed(0)} %)${r.dudosa ? ' · pediría confirmación' : ''}`);
+    for (const c of porClase) log(`  ${c.clase}: ${c.aciertos}/${c.total}${c.precision !== null ? ` · precisión ${(c.precision * 100).toFixed(0)} %` : ''}`);
+    log(`Acierto total con fotos no vistas: ${(aciertos / resultados.length * 100).toFixed(1)} % (${aciertos}/${resultados.length})`);
+    log(`Regla de duda: avisa en ${politicaDuda.erroresConAviso} de ${politicaDuda.errores} errores y pide confirmar ${politicaDuda.aciertosConAviso} de ${politicaDuda.aciertos} aciertos`);
 
     let art;
     await modelo.save(tf.io.withSaveHandler(async a => { art = a; return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } }; }));
@@ -87,10 +157,15 @@
       modelJson: { modelTopology: art.modelTopology, format: art.format || 'layers-model', generatedBy: art.generatedBy, convertedBy: art.convertedBy || null,
         weightsManifest: [{ paths: ['./model.weights.bin'], weights: art.weightSpecs }] },
       pesos: btoa(bin), metadata,
-      reporte: { fecha: metadata.timeStamp, parametros: PARAMS, acierto: aciertos / resultados.length, aciertos, total: resultados.length, porClase, errores, fotosPrueba },
+      reporte: {
+        fecha: metadata.timeStamp, parametros: PARAMS,
+        separacion: `por grupos de fotos casi idénticas (dHash, distancia ≤ ${CASI_IGUAL}/64): ${Math.round(PRUEBA * 100)} % de cada clase para prueba`,
+        acierto: aciertos / resultados.length, aciertos, total: resultados.length, porClase, confusion, politicaDuda,
+        clases: resumenClases, casiIgualesEntreClases: entreClases, errores, fotosPrueba,
+      },
     };
     const res = await fetch('/guardar', { method: 'POST', body: JSON.stringify(cuerpo) });
-    log(res.ok ? 'Listo: modelo guardado en modelos/zapatos/. Ya puedes cerrar esta pestaña.' : 'Error al guardar: ' + await res.text());
+    log(res.ok ? 'Listo: modelo guardado en modelos/zapatos/ (el anterior quedó en modelos-respaldo/). Ya puedes cerrar esta pestaña.' : 'Error al guardar: ' + await res.text());
     document.querySelector('h1').textContent = res.ok ? 'Listo' : 'Error al guardar';
   } catch (e) { console.error(e); log('ERROR: ' + (e && e.message || e)); document.querySelector('h1').textContent = 'Error'; }
 })();

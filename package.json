@@ -12,6 +12,7 @@
     "dev:local": "node scripts/dev-local.mjs",
     "supabase:local": "supabase start",
     "test:almacen": "node scripts/probar-almacen.mjs",
+    "test:duda": "node scripts/probar-duda.mjs",
     "mercado:sql": "python scripts/excel_a_sql.py",
     "seed:imagenes": "node scripts/cargar-imagenes-demo.mjs",
     "entrenar:modelo": "node scripts/entrenar-modelo.mjs"

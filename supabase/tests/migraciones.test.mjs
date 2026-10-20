@@ -33,7 +33,7 @@ await db.exec(`
 `);
 
 console.log('Migraciones');
-for (const f of ['0001_esquema_inicial.sql', '0002_tienda_variantes_almacenes.sql', '0003_mercado_calzado.sql']) {
+for (const f of ['0001_esquema_inicial.sql', '0002_tienda_variantes_almacenes.sql', '0003_mercado_calzado.sql', '0004_escaneos_ia.sql', '0005_analitica.sql']) {
   try { await db.exec(readFileSync(`${MIG}/${f}`, 'utf8')); ok(true, `${f} se aplica sin errores`); }
   catch (e) { ok(false, `${f}: ${e.message}`); process.exit(1); }
 }
@@ -225,6 +225,92 @@ ok((await as('oper', 'select * from public.mercado_comercio')).length === 0, 'cu
 ok((await as('admin', 'select * from public.mercado_comercio')).length === 2, 'personal activo (lector) consulta el mercado');
 await fails('lector', `insert into public.mercado_comercio (pais_reportante, flujo, anio, codigo_sa6, categoria, socio, valor_usd) values ('España', 'exportacion', 2024, '640411', 'C', 'S', 1)`, /permission denied/, 'ni un admin escribe en el mercado desde la app');
 await fails('lector', `delete from public.mercado_comercio`, /permission denied/, 'ni lo borra');
+
+console.log('\nEscaneos de la cámara (0004)');
+// A esta altura: «lector» es admin, «admin» quedó como lector (personal sin escritura) y «oper» está desactivado
+await as('lector', `update public.productos set etiqueta_clasificador = 'Escolar Clásico' where id = $1`, [prod]);
+const stockAntes = (await one(null, 'select coalesce(sum(cantidad), 0)::int n from public.existencias')).n;
+const scan = (who, clase = 'Escolar Clásico', dudoso = false) => as(who, `select public.escaneo_registrar('zapatos', $1, 0.91, 'Escolar Velcro', 0.07, $2, $3, $4) as id`,
+  [clase, dudoso, dudoso ? 'poco margen' : null, a1]).then(r => r[0].id);
+const e1 = await scan('admin');
+const f1 = await one(null, 'select usuario_id, producto_predicho_id, resultado, confianza::text c from public.escaneos_ia where id = $1', [e1]);
+ok(f1.usuario_id === U.admin && f1.producto_predicho_id === prod && f1.resultado === 'pendiente' && f1.c === '0.910', 'personal de solo consulta registra un escaneo pendiente con el producto de la etiqueta');
+await fails('cli1', `select public.escaneo_registrar('zapatos', 'Escolar Clásico', 0.9)`, /Sin permiso/, 'un cliente no registra escaneos');
+await fails('oper', `select public.escaneo_registrar('zapatos', 'Escolar Clásico', 0.9)`, /Sin permiso/, 'una cuenta desactivada no registra escaneos');
+await fails('anon', `select public.escaneo_registrar('zapatos', 'Escolar Clásico', 0.9)`, /permission denied/, 'anon no registra escaneos');
+await fails('admin', `insert into public.escaneos_ia (usuario_id, modelo, clase_predicha, confianza) values ($1, 'm', 'c', 1)`, /permission denied/, 'insert directo bloqueado', [U.admin]);
+await fails('lector', `update public.escaneos_ia set resultado = 'confirmado'`, /permission denied/, 'ni un admin edita escaneos directamente');
+await fails('admin', `select public.escaneo_registrar('zapatos', 'Escolar Clásico', 1.5)`, /check constraint/, 'confianza fuera de 0–1 rechazada');
+
+ok((await one('admin', `select public.escaneo_resolver($1, 'corregido', $2) r`, [e1, prodOculto])).r === 'corregido', 'corregir con otro producto');
+await fails('admin', `select public.escaneo_resolver($1, 'confirmado')`, /ya resuelto/, 'un escaneo resuelto no se vuelve a resolver', [e1]);
+const e2 = await scan('admin');
+await fails('lector', `select public.escaneo_resolver($1, 'confirmado')`, /inexistente o ya resuelto/, 'nadie resuelve el escaneo de otra persona', [e2]);
+ok((await one('admin', `select public.escaneo_resolver($1, 'corregido', $2) r`, [e2, prod])).r === 'confirmado', 'corregir eligiendo el mismo producto cuenta como confirmado');
+const e3 = await scan('admin', 'Fondo raro');
+await fails('admin', `select public.escaneo_resolver($1, 'confirmado')`, /no está vinculada/, 'no se confirma una etiqueta sin producto', [e3]);
+ok((await one('admin', `select public.escaneo_resolver($1, 'descartado', $2) r`, [e3, prod])).r === 'descartado', 'descartar');
+ok((await one(null, 'select producto_confirmado_id from public.escaneos_ia where id = $1', [e3])).producto_confirmado_id === null, 'un descarte no guarda producto');
+await fails('admin', `select public.escaneo_resolver($1, 'pendiente')`, /no válido|ya resuelto/, 'no se vuelve a «pendiente»', [await scan('admin')]);
+await scan('lector', 'Escolar Clásico', true);
+ok((await as('admin', 'select * from public.escaneos_ia')).every(r => r.usuario_id === U.admin), 'el personal ve solo sus escaneos');
+ok((await as('lector', 'select * from public.escaneos_ia')).length === 5, 'el admin ve todos los escaneos');
+ok((await as('cli1', 'select * from public.escaneos_ia')).length === 0, 'un cliente ve 0 escaneos');
+await fails('anon', 'select * from public.escaneos_ia', /permission denied/, 'anon no lee escaneos');
+ok((await one(null, 'select coalesce(sum(cantidad), 0)::int n from public.existencias')).n === stockAntes, 'escanear no modifica el inventario');
+
+console.log('\nAnalítica de la tienda (0005)');
+// Aquí también: «lector» es el admin y «admin» es personal de solo consulta
+const S1 = 'b0000000-0000-4000-8000-000000000001', V1 = 'c0000000-0000-4000-8000-000000000001';
+const ses = (id = S1, vis = V1) => JSON.stringify({ id, visitante: vis, dispositivo: 'movil', navegador: 'Chrome', sistema: 'Android' });
+const reg = (who, eventos = [], extra = '', params = []) => as(who, `select public.analitica_registrar($1::jsonb, $2::jsonb${extra})`, [ses(), JSON.stringify(eventos), ...params]);
+const ahora = new Date().toISOString();
+await reg('anon', [
+  { t: ahora, tipo: 'pagina', ruta: '#/', url: '#/' },
+  { t: ahora, tipo: 'clic', ruta: '#/', selector: 'a.pcard', texto: 'Oxford', x: 0.5, y: 300, ancho: 390, alto: 2000 },
+  { t: ahora, tipo: 'furia', ruta: '#/', selector: 'button.size' },
+  { t: ahora, tipo: 'raro', ruta: '#/' },
+]);
+const s1 = await one(null, 'select * from public.analitica_sesiones where id = $1', [S1]);
+ok(s1 && s1.usuario_id === null && s1.dispositivo === 'movil' && s1.paginas === 1 && s1.clics === 1 && s1.clics_furia === 1 && s1.eventos === 3,
+  'un visitante sin sesión registra su visita (los tipos desconocidos se ignoran)');
+ok(s1.pagina_entrada === '#/', 'la sesión guarda la página de entrada');
+await reg('cli1', [{ t: ahora, tipo: 'personalizado', ruta: '#/pedido-ok/1', nombre: 'pedido_realizado' }]);
+const s1b = await one(null, 'select usuario_id, convertida from public.analitica_sesiones where id = $1', [S1]);
+ok(s1b.usuario_id === U.cli1 && s1b.convertida, 'al iniciar sesión la visita se identifica y el pedido la marca como convertida');
+await fails('anon', `select public.analitica_registrar($1::jsonb)`, /Sesión no válida/, 'otro visitante no puede escribir en una sesión ajena', [ses(S1, 'c0000000-0000-4000-8000-000000000009')]);
+await fails('anon', `select public.analitica_registrar('{"id":"x"}'::jsonb)`, /Sesión no válida/, 'una sesión sin identificadores válidos se rechaza');
+await fails('anon', `select public.analitica_registrar($1::jsonb, $2::jsonb)`, /Demasiados eventos/, 'más de 100 eventos por llamada se rechaza',
+  [ses(), JSON.stringify(Array.from({ length: 101 }, () => ({ tipo: 'clic', ruta: '#/' })))]);
+await reg('anon', [], ', $3, $4::jsonb', [0, JSON.stringify([{ type: 4, timestamp: 1 }])]);
+await reg('anon', [], ', $3, $4::jsonb', [0, JSON.stringify([{ type: 4, timestamp: 2 }])]);
+ok((await one(null, 'select grabacion_partes n from public.analitica_sesiones where id = $1', [S1])).n === 1, 'una parte de grabación repetida no se duplica');
+await fails('anon', 'select * from public.analitica_sesiones', /permission denied/, 'anon no lee sesiones');
+ok((await as('cli1', 'select * from public.analitica_eventos')).length === 0, 'un cliente no ve eventos, ni los suyos');
+ok((await as('oper', 'select * from public.analitica_grabaciones')).length === 0, 'el personal que no es admin no ve grabaciones');
+ok((await as('admin', 'select * from public.analitica_eventos')).length === 0, 'el lector no ve eventos');
+ok((await as('lector', 'select * from public.analitica_eventos')).length === 4 && (await as('lector', 'select * from public.analitica_grabaciones')).length === 1, 'el admin ve eventos y grabaciones');
+await fails('anon', `insert into public.analitica_eventos (sesion_id, creado_en, tipo, ruta) values ($1, now(), 'clic', '#/')`, /permission denied/, 'anon no inserta eventos directamente', [S1]);
+await fails('lector', `update public.analitica_sesiones set convertida = false`, /permission denied/, 'ni el admin edita sesiones directamente');
+await as('lector', `insert into public.analitica_definiciones (nombre, tipo, valor) values ('Clic en Oxford', 'clic_texto', 'Oxford')`);
+await as('lector', `insert into public.analitica_embudos (nombre, pasos) values ('Compra', '["pagina:#/", "p:pedido_realizado"]')`);
+await fails('lector', `insert into public.analitica_embudos (nombre, pasos) values ('Corto', '["pagina:#/"]')`, /check constraint/, 'un embudo necesita al menos 2 pasos');
+await fails('admin', `insert into public.analitica_definiciones (nombre, tipo, valor) values ('x', 'url', '#/')`, /row-level security|permission denied/, 'el lector no define eventos');
+await as('lector', `insert into public.analitica_notas (sesion_id, texto) values ($1, 'Se trabó en la talla')`, [S1]);
+await fails('lector', `insert into public.analitica_notas (sesion_id, texto, autor) values ($1, 'x', $2)`, /row-level security/, 'una nota no se firma con otra cuenta', [S1, U.admin]);
+ok((await as('anon', 'select * from public.analitica_config')).length === 0, 'la tienda puede leer la configuración (aún sin fila)');
+await fails('admin', 'select public.analitica_config_guardar(false, false, 30)', /Solo un administrador/, 'solo el admin cambia la configuración');
+await as('lector', 'select public.analitica_config_guardar(true, false, 30)');
+await reg('anon', [], ', $3, $4::jsonb', [1, JSON.stringify([{ type: 3, timestamp: 3 }])]);
+ok((await one(null, 'select grabacion_partes n from public.analitica_sesiones where id = $1', [S1])).n === 1, 'con la grabación apagada no se guardan partes nuevas');
+await as('lector', 'select public.analitica_config_guardar(false, true, 30)');
+await as('anon', `select public.analitica_registrar($1::jsonb)`, [ses('b0000000-0000-4000-8000-000000000002')]);
+ok(!(await one(null, `select 1 x from public.analitica_sesiones where id = 'b0000000-0000-4000-8000-000000000002'`)), 'con la analítica apagada no se registra nada');
+await db.query(`update public.analitica_sesiones set inicio = now() - interval '40 days' where id = $1`, [S1]);
+await fails('admin', 'select public.analitica_purgar()', /Solo un administrador/, 'solo el admin purga');
+ok((await one('lector', 'select public.analitica_purgar() n')).n === 1, 'purgar borra las sesiones más viejas que la retención');
+ok((await one(null, 'select count(*)::int n from public.analitica_eventos')).n === 0 && (await one(null, 'select count(*)::int n from public.analitica_notas')).n === 0,
+  'al purgar se borran también sus eventos y notas');
 
 console.log(`\n${pass} correctas, ${fail} fallidas`);
 process.exit(fail ? 1 : 0);

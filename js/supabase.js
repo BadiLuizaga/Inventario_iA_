@@ -36,8 +36,13 @@ export async function initSupabase() {
   if (!/^https:\/\/.+/i.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) return { client: null, status: 'bad-url' };
   if (!window.supabase || !window.supabase.createClient) return { client: null, status: 'no-lib' };
 
+  // Vista previa del mapa de calor (?an=0, dentro del panel): visitante anónimo, sin tocar la sesión
+  // guardada ni competir con el panel por el candado de autenticación
+  const vistaPrevia = new URLSearchParams(location.search).get('an') === '0';
   client = window.supabase.createClient(url, key, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    auth: vistaPrevia
+      ? { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'sb-vista-previa' }
+      : { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
   return { client, status: 'ok' };
 }
@@ -52,6 +57,23 @@ export function db() {
 export function unwrap({ data, error }) {
   if (error) throw error;
   return data;
+}
+
+/**
+ * Hasta `limite` filas de una consulta, de 1000 en 1000: la API entrega como máximo 1000
+ * por pedido (max_rows) y cortaría el resto sin avisar. `construir` arma la consulta sin
+ * .limit() y se vuelve a llamar en cada página; su orden debe terminar en una columna única
+ * para que ninguna fila se repita ni se salte entre páginas.
+ */
+export async function todasLasFilas(construir, limite = 100000) {
+  const out = [];
+  for (let i = 0; i < limite; i += 1000) {
+    const hasta = Math.min(i + 1000, limite);
+    const pagina = unwrap(await construir().range(i, hasta - 1));
+    out.push(...pagina);
+    if (pagina.length < hasta - i) break;
+  }
+  return out;
 }
 
 /** Mensajes para cuando la base no está disponible. */

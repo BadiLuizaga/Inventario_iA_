@@ -121,7 +121,7 @@ La cámara usa un modelo de [Teachable Machine](https://teachablemachine.withgoo
 
 **Reentrenar con fotos propias:** es lo que más mejora el reconocimiento de sus zapatos reales.
 
-1. Pon las fotos en una carpeta con una subcarpeta por clase. El nombre de cada subcarpeta debe ser la etiqueta exacta. Por defecto se usa `../entrenamiento-ia`.
+1. Pon las fotos en una carpeta con una subcarpeta por clase. El nombre de cada subcarpeta debe ser la etiqueta exacta. Por defecto se usa `entrenamiento-ia/` dentro del proyecto (no se versiona) y, si no existe, `../entrenamiento-ia`.
 2. Ejecuta:
    ```bash
    npm run entrenar:modelo -- "<carpeta de fotos>" "<carpeta para fotos de prueba>"
@@ -131,7 +131,8 @@ La cámara usa un modelo de [Teachable Machine](https://teachablemachine.withgoo
 El script:
 
 - usa la misma librería que la app;
-- reserva el 20 % de cada clase para medir el acierto;
+- reserva el 20 % de cada clase para medir el acierto, apartando juntas las fotos casi idénticas;
+- respalda el modelo anterior en `modelos-respaldo/<fecha>/` antes de guardar;
 - guarda el modelo en `modelos/zapatos/`;
 - copia a la carpeta de prueba las fotos que reconoce con más seguridad.
 
@@ -152,12 +153,41 @@ El script:
 7. Pon ese enlace en `DEFAULT_MODEL`, en `js/classifier/model.js`, y agrega el identificador anterior a `LEGACY_MODELS`. Para probar en un solo dispositivo sin tocar el código: Almacén → Ajustes → URL de otro modelo.
 8. Si una clase tiene otro nombre, vincúlala desde **Panel → Productos → (producto) → Datos → Etiqueta del modelo**. La lista se lee del modelo.
 
+**Probar el modelo con los zapatos reales:** sigue la prueba de [GUION-RECORRIDO.md §3.2](GUION-RECORRIDO.md). Cada respuesta del personal («Sí, es correcto» o «No, es otro producto») queda en Panel → Reportes → Reconocimiento IA (necesita la migración `0004_escaneos_ia.sql`). Ese reporte muestra el acierto por clase y qué clases se confunden: esas son las que hay que reforzar con fotos nuevas.
+
 Las clases que no estén vinculadas muestran «La etiqueta … no está vinculada a ningún producto». Así se comprueba que la búsqueda funciona aunque el modelo aún no tenga zapatos.
 
-## 7. Pruebas
+## 7. Analítica de la tienda (panel tipo Smartlook)
+
+Panel → **Analítica** muestra cómo navegan los clientes. No usa IA. Necesita la migración `0005_analitica.sql`.
+
+| Sección | Qué muestra |
+| --- | --- |
+| Tablero | Visitantes, sesiones, páginas, duración, rebote, conversión, furia y errores, comparados con el período anterior. Visitas por día, embudo de compra, dispositivos, navegadores, sistemas, fuentes y páginas. Las tarjetas se eligen con «Personalizar». |
+| Sesiones y grabaciones | Lista con filtros: navegador, sistema, fuente, URL visitada (admite `*`), hizo / no hizo un evento, pedido, furia, errores, identificadas, con grabación, duración y páginas. Los filtros se guardan como **segmentos**. Cada sesión se reproduce con su línea de tiempo, su información y notas. |
+| Mapas de calor | Clics, movimiento del ratón, desplazamiento y clics de furia, dibujados sobre la página real, por dispositivo. |
+| Eventos | Eventos automáticos, de la tienda (vio un producto, agregó al carrito, checkout, pedido, búsqueda, inicio de sesión, registro) y **definidos por el admin** (URL, texto de un botón o selector CSS). Los definidos se aplican también al historial. |
+| Embudos | Pasos en orden dentro de la sesión: conversión, abandono, tiempo entre pasos y conversión por dispositivo. Desde cada paso se abren las sesiones que abandonaron. |
+| Recorridos | Flujo de páginas paso a paso y los recorridos más comunes. |
+| Retención | Cohortes por la primera visita, por semana o por día. |
+| Visitantes | Un visitante es un navegador; se identifica cuando inicia sesión. Cada uno tiene su perfil con sus sesiones. |
+| Errores y frustración | Errores de JavaScript y clics de furia, agrupados y ordenados por cuántas sesiones afectan. |
+| Ajustes | Activar o desactivar la medición y la grabación, el tiempo de retención y el borrado de datos viejos. |
+
+**Privacidad:**
+
+- La tienda pide permiso con un aviso. Quien lo rechaza no se mide.
+- La opción se puede cambiar desde «Privacidad y analítica», al pie de la página.
+- En las grabaciones se ocultan siempre los campos de formulario y el texto de «Mi cuenta», «Mis pedidos» y el checkout. Otra zona se oculta con la clase `an-enmascarar` (texto oculto) o `an-bloquear` (no se graba).
+- Solo los administradores ven estos datos.
+
+**Grabación:** usa [rrweb](https://github.com/rrweb-io/rrweb), cargado desde jsDelivr.
+
+## 8. Pruebas
 
 ```bash
 npm run test:db        # migraciones y permisos en PostgreSQL en memoria (no necesita Docker)
+npm run test:duda      # regla de duda del escáner con lecturas simuladas (no necesita cámara)
 npm run test:almacen   # API del almacenero contra el Supabase local (necesita `supabase start`)
 ```
 
@@ -173,7 +203,7 @@ npm run test:almacen   # API del almacenero contra el Supabase local (necesita `
 
 Deja el stock como estaba: la entrada se compensa con una salida y el conteo se anula. Los movimientos de prueba quedan en el historial, que es inmutable, con el motivo «Prueba automática».
 
-## 8. Proyecto Supabase en la nube
+## 9. Proyecto Supabase en la nube
 
 1. Aplica las migraciones en orden, con `npx supabase link` y `npx supabase db push`, o pega en el SQL Editor:
    - `0001_esquema_inicial.sql`
@@ -194,7 +224,7 @@ Deja el stock como estaba: la entrada se compensa con una salida y el conteo se 
    - **Con Docker:** copia `.env.example` como `.env` y ejecuta `docker compose up -d --build`.
 6. En Supabase → Authentication → URL Configuration, pon la URL del sitio y las redirecciones.
 
-## 9. Problemas frecuentes
+## 10. Problemas frecuentes
 
 | Síntoma | Causa y solución |
 | --- | --- |

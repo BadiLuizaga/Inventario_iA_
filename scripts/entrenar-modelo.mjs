@@ -7,16 +7,31 @@
 //
 // Uso: npm run entrenar:modelo -- [carpeta de fotos] [carpeta de fotos de prueba]
 //      y abrir http://localhost:8090 en Chrome. Al terminar guarda modelos/zapatos/ y se cierra.
-// El 20 % de cada clase no se usa para entrenar: sirve para medir el acierto, y las que el
-// modelo reconoce con más seguridad se copian a la carpeta de fotos de prueba.
+// Por defecto las fotos se buscan en entrenamiento-ia/ dentro del proyecto (no se versiona)
+// y, si no está, en ../entrenamiento-ia (la ubicación original).
+// El 20 % de cada clase no se usa para entrenar: sirve para medir el acierto. Se aparta por
+// grupos de fotos casi idénticas, para que una casi-copia en prueba no infle el resultado.
+// Antes de guardar, el modelo anterior se copia a modelos-respaldo/<fecha>/.
 import { createServer } from 'node:http';
 import { readFile, readdir, writeFile, mkdir, copyFile, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
 import { ROOT } from './lib/supabase-local.mjs';
 
-const FOTOS = resolve(process.argv[2] || join(ROOT, '..', 'entrenamiento-ia'));
+const FOTOS = resolve(process.argv[2] || [join(ROOT, 'entrenamiento-ia'), join(ROOT, '..', 'entrenamiento-ia')].find(existsSync) || join(ROOT, 'entrenamiento-ia'));
 const PRUEBAS = resolve(process.argv[3] || join(ROOT, '..', 'fotos-prueba'));
 const SALIDA = join(ROOT, 'modelos', 'zapatos');
+const RESPALDOS = join(ROOT, 'modelos-respaldo');
+
+if (!existsSync(FOTOS)) {
+  console.error(`No encuentro la carpeta de fotos: ${FOTOS}
+Debe tener una subcarpeta por clase con el nombre EXACTO de la etiqueta, por ejemplo:
+  entrenamiento-ia/Escolar Clásico/*.jpg
+  entrenamiento-ia/Escolar Velcro/*.jpg
+  entrenamiento-ia/Fondo y otros/*.jpg
+Ponla en ${join(ROOT, 'entrenamiento-ia')} o pasa la ruta: npm run entrenar:modelo -- "<carpeta>"`);
+  process.exit(1);
+}
 const PORT = Number(process.env.TRAIN_PORT) || 8090;
 const IMG = /\.(jpe?g|png|webp)$/i;
 const TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
@@ -32,6 +47,13 @@ async function lista() {
 }
 
 async function guardar(datos) {
+  // Respaldo del modelo actual: nunca se sobrescribe sin copia
+  if (existsSync(join(SALIDA, 'model.json'))) {
+    const destino = join(RESPALDOS, new Date().toISOString().replace(/[:.]/g, '-'));
+    await mkdir(destino, { recursive: true });
+    for (const f of await readdir(SALIDA)) await copyFile(join(SALIDA, f), join(destino, f));
+    console.log(`Modelo anterior respaldado en ${destino}`);
+  }
   await mkdir(SALIDA, { recursive: true });
   await writeFile(join(SALIDA, 'model.json'), JSON.stringify(datos.modelJson));
   await writeFile(join(SALIDA, 'model.weights.bin'), Buffer.from(datos.pesos, 'base64'));
@@ -68,6 +90,8 @@ createServer(async (req, res) => {
       console.log(`\nModelo guardado en ${SALIDA}`);
       console.log(`Acierto con fotos no vistas: ${(r.acierto * 100).toFixed(1)} % (${r.aciertos}/${r.total})`);
       for (const c of r.porClase) console.log(`  ${c.clase.padEnd(26)} ${c.aciertos}/${c.total}`);
+      const d = r.politicaDuda;
+      console.log(`Regla de duda (${d.regla}): avisa en ${d.erroresConAviso}/${d.errores} errores, pide confirmar ${d.aciertosConAviso}/${d.aciertos} aciertos`);
       console.log(`Fotos de prueba (${r.fotosPrueba.length}) en ${PRUEBAS}`);
       setTimeout(() => process.exit(0), 300);
       return;

@@ -195,6 +195,7 @@ svg.i.solid{fill:currentColor; stroke:none}
 }
 
 .detected{border:2px solid var(--accent)}
+.detected.doubt{border-color:var(--warn)}
 .detected .lbl{font-family:var(--font-display); font-weight:800; font-size:1.2rem; overflow-wrap:anywhere; margin:2px 0 6px}
 
 .tech{background:var(--surface); border-radius:var(--r); padding:14px 16px}

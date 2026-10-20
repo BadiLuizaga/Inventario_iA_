@@ -171,3 +171,9 @@ main{padding-top:24px; padding-bottom:56px; min-height:60vh; outline:none}
 .site-footer a:hover{color:#fff}
 .muted-inv{color:var(--on-navy-muted); max-width:48ch}
 .footer-bottom{border-top:1px solid rgba(255,255,255,.12); padding-top:16px; padding-bottom:22px; font-size:.82rem; color:var(--on-navy-muted)}
+
+/* Aviso de analítica (consentimiento) */
+.consent{position:fixed; left:16px; right:16px; bottom:16px; z-index:80; max-width:560px; margin-left:auto; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:16px; display:grid; gap:12px; font-size:.9rem}
+.consent .row{justify-content:flex-end; gap:8px}
+.footer-bottom{display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center}
+.link-btn{border:0; background:none; padding:0; color:inherit; text-decoration:underline; font:inherit; cursor:pointer}

@@ -12,6 +12,21 @@ export function dataTable(cols, rows, { rowClass = null } = {}) {
       ...cols.map(c => { const v = c.value(r); return el('td', { class: c.num ? 'num' : '' }, v instanceof Node ? v : (v ?? '—') === '' ? '—' : String(v ?? '—')); }))))));
 }
 
+/** Barras horizontales. filas: [{ label, text, series: [{ value, fill?: 'alt', title? }] }] */
+export function barras(filas, max) {
+  return el('div', { class: 'bars' }, ...filas.map(f => el('div', { class: 'bar-row' },
+    el('span', { text: f.label }),
+    el('div', { class: 'bar-pair' }, ...f.series.map(s => {
+      const fill = el('div', { class: 'bar-fill' + (s.fill ? ' ' + s.fill : ''), title: s.title || '' });
+      fill.style.width = `${max > 0 ? (s.value / max) * 100 : 0}%`;
+      return el('div', { class: 'bar-track' }, fill);
+    })),
+    el('strong', { text: f.text }))));
+}
+/** Leyenda de las series de un gráfico: leyenda(['Entradas'], ['Salidas', 'alt']) */
+export const leyenda = (...items) => el('div', { class: 'legend' }, ...items.map(([t, fill]) => el('span', {}, el('i', { class: fill || null }), t)));
+export const tarjeta = (titulo, sub, ...hijos) => el('div', { class: 'card stack' }, el('h3', { text: titulo }), sub ? el('p', { class: 'muted', text: sub }) : null, ...hijos);
+
 /** Descarga filas como CSV (separador «;», compatible con Excel en español). */
 export function downloadCsv(name, cols, rows) {
   const esc = v => { const s = v === null || v === undefined ? '' : String(v); return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
